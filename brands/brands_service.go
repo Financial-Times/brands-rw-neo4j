@@ -7,24 +7,32 @@ import (
 	"github.com/jmcvetta/neoism"
 )
 
-//Service maintains info about runners and index managers
-type Service struct {
+//service maintains info about runners and index managers
+type service struct {
 	cypherRunner neoutils.CypherRunner
 	indexManager neoutils.IndexManager
 }
 
-// NewCypherBrandService provides functions for create, update, delete operations on people in Neo4j,
+// NewCyphersBrandService provides functions for create, update, delete operations on people in Neo4j,
 // plus other utility functions needed for a service
-func NewCypherBrandService(cypherRunner neoutils.CypherRunner, indexManager neoutils.IndexManager) service {
-	return Service{cypherRunner, indexManager}
+func NewCypherBrandsService(cypherRunner neoutils.CypherRunner, indexManager neoutils.IndexManager) service {
+	return service{cypherRunner, indexManager}
 }
 
+//Initialise the driver
 func (s service) Initialise() error {
-	return neoutils.EnsureConstraints(s.indexManager, map[string]string{
+	entities := map[string]string{
 		"Thing":   "uuid",
 		"Concept": "uuid",
 		"Brand":   "uuid",
-	})
+	}
+	if err := neoutils.EnsureConstraints(s.indexManager, entities); err != nil {
+		return err
+	}
+	if err := neoutils.EnsureIndexes(s.indexManager, entities); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s service) Read(uuid string) (interface{}, bool, error) {
@@ -33,11 +41,13 @@ func (s service) Read(uuid string) (interface{}, bool, error) {
 	}{}
 	query := &neoism.CypherQuery{
 		Statement: `
-                MATCH (n:Brand {uuid:{uuid}}) RETURN n.uuid AS uuid,
-                        n.parentUUID AS parentUUID, n.prefLabel AS prefLabel,
-                        n.strapline AS strapLine, n.descriptionXML AS descriptionXML,
-                        n.description AS description, n.imageUrl AS imageUrl
-                        `,
+                        MATCH (n:Brand {uuid:{uuid}})
+                        OPTIONAL MATCH (n:Brand {uuid:{uuid}})-[:HAS_PARENT]->(p:Brand)
+                        RETURN n.uuid AS uuid, n.prefLabel AS prefLabel,
+                                n.strapline AS strapLine, p.uuid as parentUUID,
+                                n.descriptionXML AS descriptionXML,
+                                n.description AS description, n.imageUrl AS imageUrl
+                                `,
 		Parameters: map[string]interface{}{
 			"uuid": uuid,
 		},
@@ -54,19 +64,33 @@ func (s service) Read(uuid string) (interface{}, bool, error) {
 }
 
 func (s service) Write(thing interface{}) error {
-	if parentUUID, exists := thing["parentUUID"]; exists {
-		delete(thing, thing["parentUUID"])
+	brand := thing.(Brand)
+	brandProps := map[string]string{
+		"prefLabel":      brand.PrefLabel,
+		"strapLine":      brand.Strapline,
+		"descriptionXML": brand.DescriptionXML,
+		"description":    brand.Description,
+		"imageUrl":       brand.ImageURL,
+	}
+	stmt := `
+                OPTIONAL MATCH (n:Brand {uuid:{uuid}})-[r:HAS_PARENT]->(p:Brand)
+                DELETE r
+                MERGE (n:Thing {uuid: {uuid}})
+                SET n:Brand
+                SET n={props}
+                `
+	params := neoism.Props{
+		"uuid":  brand.UUID,
+		"props": brandProps,
+	}
+	parentUUID := brand.ParentUUID
+	if parentUUID != "" {
+		stmt += `MERGE (n)-[:HAS_PARENT](:Thing {uuid:{parentUUID}})`
+		params["parentUUID"] = brand.ParentUUID
 	}
 	query := &neoism.CypherQuery{
-		Statement: `
-                        MERGE (n:Thing {uuid: {uuid}})
-                        SET n :Brand
-                        SET n={allprops}
-                        `,
-		Parameters: map[string]interface{}{
-			"uuid":     p.UUID,
-			"allprops": thing,
-		},
+		Statement:  stmt,
+		Parameters: params,
 	}
 
 	return s.cypherRunner.CypherBatch([]*neoism.CypherQuery{query})
@@ -80,9 +104,9 @@ func (s service) Delete(uuid string) (bool, error) {
 			REMOVE n:Brand
 			SET n={props}
 		`,
-		Parameters: map[string]interface{}{
+		Parameters: neoism.Props{
 			"uuid": uuid,
-			"props": map[string]interface{}{
+			"props": neoism.Props{
 				"uuid": uuid,
 			},
 		},
@@ -97,7 +121,7 @@ func (s service) Delete(uuid string) (bool, error) {
 			WHERE relCount = 0
 			DELETE p
 		`,
-		Parameters: map[string]interface{}{
+		Parameters: neoism.Props{
 			"uuid": uuid,
 		},
 	}
@@ -118,9 +142,9 @@ func (s service) Delete(uuid string) (bool, error) {
 }
 
 func (s service) DecodeJSON(dec *json.Decoder) (interface{}, string, error) {
-	p := person{}
-	err := dec.Decode(&p)
-	return p, p.UUID, err
+	brand := Brand{}
+	err := dec.Decode(&brand)
+	return brand, brand.UUID, err
 }
 
 func (s service) Check() error {
@@ -134,7 +158,7 @@ func (s service) Count() (int, error) {
 	}{}
 
 	query := &neoism.CypherQuery{
-		Statement: `MATCH (n:Person) return count(n) as c`,
+		Statement: `MATCH (n:Brand) return count(n) as c`,
 		Result:    &results,
 	}
 
@@ -146,7 +170,3 @@ func (s service) Count() (int, error) {
 
 	return results[0].Count, nil
 }
-
-const (
-	fsAuthority = "http://api.ft.com/system/FACTSET-PPL"
-)

@@ -35,12 +35,12 @@ func main() {
 		}
 
 		batchRunner := neoutils.NewBatchCypherRunner(neoutils.StringerDb{db}, *batchSize)
-		peopleDriver := brands.NewCypherBrandsService(batchRunner, db)
+		brandsDriver := brands.NewCypherBrandsService(batchRunner, db)
 
 		baseftrwapp.OutputMetricsIfRequired(*graphiteTCPAddress, *graphitePrefix, *logMetrics)
 
 		engs := map[string]baseftrwapp.Service{
-			"people": peopleDriver,
+			"brands": brandsDriver,
 		}
 
 		var checks []v1a.Check
@@ -49,7 +49,7 @@ func main() {
 		}
 
 		baseftrwapp.RunServer(engs,
-			v1a.Handler("ft-people_rw_neo4j ServiceModule", "Writes 'people' to Neo4j, usually as part of a bulk upload done on a schedule", checks...),
+			v1a.Handler("ft-brands_rw_neo4j ServiceModule", "Writes 'brands' to Neo4j, usually as part of a bulk upload done on a schedule", checks...),
 			*port)
 	}
 
