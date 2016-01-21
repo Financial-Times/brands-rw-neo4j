@@ -72,3 +72,14 @@ Will return 204 if successful, 404 if not found
 Healthchecks: [http://localhost:8080/__health](http://localhost:8080/__health)
 
 Ping: [http://localhost:8080/ping](http://localhost:8080/ping) or [http://localhost:8080/__ping](http://localhost:8080/__ping)
+
+
+### Notes
+* Conversion of trig files to json via jq:
+  ```
+  rapper -i trig -o json ftdata-brands.trig | jq -c 'to_entries | .[] | { uuid: .key | ltrimstr("http://api.ft.com/things/"), prefLabel: .value["http://www.ft.com/ontology/core/prefLabel"][0].value, parentUUID: .value["http://www.ft.com/ontology/classification/isSubClassificationOf"][0].value | ltrimstr("http://api.ft.com/things/") }'
+  ```
+* Import converted data to stored
+  ```
+  cat fromTrig.json | up-restutil put-resources uuid http://localhost:8080/brands
+  ```
