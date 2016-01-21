@@ -1,4 +1,4 @@
-class brands-rw-neo4j {
+class brands_rw_neo4j {
 
   $configParameters = hiera('configParameters','')
 
