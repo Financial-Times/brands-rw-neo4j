@@ -2,8 +2,8 @@ package brands
 
 import (
 	"encoding/json"
-
 	"github.com/Financial-Times/neo-utils-go"
+	log "github.com/Sirupsen/logrus"
 	"github.com/jmcvetta/neoism"
 )
 
@@ -13,7 +13,7 @@ type service struct {
 	indexManager neoutils.IndexManager
 }
 
-// NewCyphersBrandService provides functions for create, update, delete operations on people in Neo4j,
+// NewCypherBrandsService provides functions for create, update, delete operations on people in Neo4j,
 // plus other utility functions needed for a service
 func NewCypherBrandsService(cypherRunner neoutils.CypherRunner, indexManager neoutils.IndexManager) service {
 	return service{cypherRunner, indexManager}
@@ -42,7 +42,7 @@ func (s service) Read(uuid string) (interface{}, bool, error) {
 	query := &neoism.CypherQuery{
 		Statement: `
                         MATCH (n:Brand {uuid:{uuid}})
-                        OPTIONAL MATCH (n:Brand {uuid:{uuid}})-[:HAS_PARENT]->(p:Brand)
+                        OPTIONAL MATCH (n:Brand {uuid:{uuid}})-[:HAS_PARENT]->(p:Thing)
                         RETURN n.uuid AS uuid, n.prefLabel AS prefLabel,
                                 n.strapline AS strapLine, p.uuid as parentUUID,
                                 n.descriptionXML AS descriptionXML,
@@ -54,6 +54,7 @@ func (s service) Read(uuid string) (interface{}, bool, error) {
 		Result: &results,
 	}
 	err := s.cypherRunner.CypherBatch([]*neoism.CypherQuery{query})
+	log.Infof("Read brand : %s returned %+v\n", uuid, results)
 	if err != nil {
 		return Brand{}, false, err
 	}
@@ -66,6 +67,7 @@ func (s service) Read(uuid string) (interface{}, bool, error) {
 func (s service) Write(thing interface{}) error {
 	brand := thing.(Brand)
 	brandProps := map[string]string{
+		"uuid":           brand.UUID,
 		"prefLabel":      brand.PrefLabel,
 		"strapLine":      brand.Strapline,
 		"descriptionXML": brand.DescriptionXML,
@@ -73,7 +75,7 @@ func (s service) Write(thing interface{}) error {
 		"imageUrl":       brand.ImageURL,
 	}
 	stmt := `
-                OPTIONAL MATCH (n:Brand {uuid:{uuid}})-[r:HAS_PARENT]->(p:Brand)
+                OPTIONAL MATCH (:Brand {uuid:{uuid}})-[r:HAS_PARENT]->(:Brand)
                 DELETE r
                 MERGE (n:Thing {uuid: {uuid}})
                 SET n:Brand
@@ -85,7 +87,10 @@ func (s service) Write(thing interface{}) error {
 	}
 	parentUUID := brand.ParentUUID
 	if parentUUID != "" {
-		stmt += `MERGE (n)-[:HAS_PARENT](:Thing {uuid:{parentUUID}})`
+		stmt += `
+                        MERGE (p:Thing {uuid:{parentUUID}})
+                        MERGE (n)-[:HAS_PARENT]->(p)
+                        `
 		params["parentUUID"] = brand.ParentUUID
 	}
 	query := &neoism.CypherQuery{
