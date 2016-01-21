@@ -1,4 +1,4 @@
-name    'ft-brands-rw-neo4j'
+name    'ft-brands_rw_neo4j'
 version '0.0.0'
 source 'git@github.com:Financial-Times/brands-rw-neo4j.git'
 author 'ft'
