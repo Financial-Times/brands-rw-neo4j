@@ -10,3 +10,9 @@ type Brand struct {
 	Description    string `json:"description"` // TODO this this is desirable for people who want to process pure text
 	ImageURL       string `json:"_imageUrl"`   // TODO this is a temporary thing - needs to be integrated into images properly
 }
+
+// Identifier says where the info comes from
+type Identifier struct {
+	Authority       string `json:"authority"`
+	IdentifierValue string `json:"identifierValue"`
+}

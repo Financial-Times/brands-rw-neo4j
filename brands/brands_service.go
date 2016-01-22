@@ -44,9 +44,9 @@ func (s service) Read(uuid string) (interface{}, bool, error) {
                         MATCH (n:Brand {uuid:{uuid}})
                         OPTIONAL MATCH (n:Brand {uuid:{uuid}})-[:HAS_PARENT]->(p:Thing)
                         RETURN n.uuid AS uuid, n.prefLabel AS prefLabel,
-                                n.strapline AS strapLine, p.uuid as parentUUID,
+                                n.strapline AS strapline, p.uuid as parentUUID,
                                 n.descriptionXML AS descriptionXML,
-                                n.description AS description, n.imageUrl AS imageUrl
+                                n.description AS description, n.imageUrl AS _imageUrl
                                 `,
 		Parameters: map[string]interface{}{
 			"uuid": uuid,
@@ -69,7 +69,7 @@ func (s service) Write(thing interface{}) error {
 	brandProps := map[string]string{
 		"uuid":           brand.UUID,
 		"prefLabel":      brand.PrefLabel,
-		"strapLine":      brand.Strapline,
+		"strapline":      brand.Strapline,
 		"descriptionXML": brand.DescriptionXML,
 		"description":    brand.Description,
 		"imageUrl":       brand.ImageURL,
@@ -79,6 +79,7 @@ func (s service) Write(thing interface{}) error {
                 DELETE r
                 MERGE (n:Thing {uuid: {uuid}})
                 SET n:Brand
+                SET n:Concept
                 SET n={props}
                 `
 	params := neoism.Props{
