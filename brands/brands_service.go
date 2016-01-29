@@ -13,7 +13,7 @@ type service struct {
 	indexManager neoutils.IndexManager
 }
 
-// NewCypherBrandsService provides functions for create, update, delete operations on people in Neo4j,
+// NewCypherBrandsService provides functions for create, update, delete operations on brands in Neo4j,
 // plus other utility functions needed for a service
 func NewCypherBrandsService(cypherRunner neoutils.CypherRunner, indexManager neoutils.IndexManager) service {
 	return service{cypherRunner, indexManager}
