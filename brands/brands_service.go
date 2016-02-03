@@ -61,7 +61,7 @@ func (s service) Read(uuid string) (interface{}, bool, error) {
 	if len(results) == 0 {
 		return Brand{}, false, nil
 	}
-	return results[0], true, nil
+	return results[0].Brand, true, nil
 }
 
 func (s service) Write(thing interface{}) error {

@@ -11,29 +11,34 @@ import (
 	"testing"
 )
 
-func TestDelete(t *testing.T) {
-	assert := assert.New(t)
-	uuid := "123"
+var validOrphanBrand = Brand{
+	UUID:           "92f4ec09-436d-4092-a88c-96f54e34007c",
+	PrefLabel:      "validOrphanBrand",
+	Description:    "This brand has no parent but otherwise has valid values for all fields",
+	DescriptionXML: "<body>This <i>brand</i> has no parent but otherwise has valid values for all fields</body>",
+	ImageURL:       "http://media.ft.com/validFatOrphanBrand.png",
+}
 
+func TestDeleteExitingBrand(t *testing.T) {
 	driver := getCypherDriver(t)
-
-	instData := Brand{UUID: uuid, PrefLabel: "Test"}
-	assert.NoError(driver.Write(instData), "Error creating test instance data with uuid %s", uuid)
-
-	found, err := driver.Delete(uuid)
-	assert.NoError(err, "Error deleting test instance data for uuid %s", uuid)
-	assert.True(found, "Unable to delete test instance data with uuid %s (%+v)", uuid, instData)
-
-	zombieInst, found, err := driver.Read(uuid)
-
-	assert.Equal(Brand{}, zombieInst,
-		"Test instance data with uuid %s should have been deleted (found %+v)", uuid, zombieInst)
-	assert.False(found, "Found instance with uuid %s, should have been deleted", uuid)
-	assert.NoError(err, "Error looking instance with uuid %s", uuid)
+	err := driver.Write(validOrphanBrand)
+	assert.NoError(t, err)
+	done, err := getCypherDriver(t).Delete(validOrphanBrand.UUID)
+	assert.True(t, done)
 }
 
 func TestCreateAllValuesPresent(t *testing.T) {
-	// cleanUp(t, uuid)
+	err := getCypherDriver(t).Write(validOrphanBrand)
+	assert.NoError(t, err)
+	readBrandAndCompare(validOrphanBrand, t)
+	cleanUp(validOrphanBrand.UUID, t)
+}
+
+func readBrandAndCompare(expected Brand, t *testing.T) {
+	actual, found, err := getCypherDriver(t).Read(expected.UUID)
+	assert.NoError(t, err)
+	assert.True(t, found)
+	assert.EqualValues(t, expected, actual)
 }
 
 func TestCreateHandlesSpecialCharacters(t *testing.T) {
@@ -53,9 +58,8 @@ func TestUpdateWillRemovePropertiesNoLongerPresent(t *testing.T) {
 
 func TestConnectivityCheck(t *testing.T) {
 	driver := getCypherDriver(t)
-	assert := assert.New(t)
 	err := driver.Check()
-	assert.NoError(err, "Unexpected error on connectivity check")
+	assert.NoError(t, err)
 }
 
 func getCypherDriver(t *testing.T) (service baseftrwapp.Service) {
@@ -68,17 +72,8 @@ func getCypherDriver(t *testing.T) (service baseftrwapp.Service) {
 	return NewCypherBrandsService(neoutils.StringerDb{db}, db)
 }
 
-func readInstanceByUUIDAndCheckFieldsMatch(driver *baseftrwapp.Service, t *testing.T, uuid string, expectedData interface{}) {
-	assert := assert.New(t)
-	storedData, found, err := driver.Read(uuid)
-	assert.NoError(err, "Error finding instance data for uuid %s", uuid)
-	assert.True(found, "Didn't find instance data for uuid %s", uuid)
-	assert.EqualValues(expectedData, storedData, "instance data should be the same")
-}
-
-func cleanUp(t *testing.T, uuid string) {
-	assert := assert.New(t)
-	found, err := driver.Delete(uuid)
-	assert.True(found, "Didn't manage to delete brand for uuid %", uuid)
-	assert.NoError(err, "Error deleting brand for uuid %s", uuid)
+func cleanUp(uuid string, t *testing.T) {
+	found, err := getCypherDriver(t).Delete(uuid)
+	assert.True(t, found, "Didn't manage to delete brand for uuid %", uuid)
+	assert.NoError(t, err, "Error deleting brand for uuid %s", uuid)
 }
