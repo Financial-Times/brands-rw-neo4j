@@ -6,10 +6,17 @@
       "rules" : {
         "prefLabel" : { "select": ".top-title" , "extract" : "text"},
         "strapLine" : { "select": ".top-subtitle", "extract" : "text"},
-        "descriptionXML" : { "select" : "div.content-tab:nth-child(3)", "extract" : "inner_html", "transformer" : "WordPress"},
+        "descriptionXML" : { "select" : "div.content-tab:nth-child(3)", "extract" : "inner_html", "transformer" : "HtmlTransformer"},
         "description" : { "select" : "div.content-tab:nth-child(3)", "extract" : "text", "filter" : "([^\\n^\\r\\t]*)"},
         "_imageUrl" : { "select" : ".top-background-image", "extract" : "style", "filter" : ".*\\((.*)\\)"}
       }
+    }
+  },
+  "transformers" : {
+    "HtmlTransformer" : {
+      "url":"http://localhost:14080/content-transformer",
+      "headers": [ "Content-Type:text/html"],
+      "method": "POST"
     }
   },
   "endpoints" :  [

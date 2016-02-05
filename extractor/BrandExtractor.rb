@@ -4,7 +4,7 @@ require "nokogiri"
 require "open-uri"
 require 'json'
 require 'pp'
-
+require 'net/http'
 
 # Open the fromTrig.json file this gives lists of brands known according to grpahdb
 # Open the BrandsExtractor.json - this is the list of brands we will actually scrape fromTrig
@@ -54,6 +54,9 @@ def ProcessEndpoint(endpoint, rule_set)
         Regexp.new(rule['filter']).match(value) {|md| md.captures.each {|c| filtered += c}}
         value = filtered
       end
+      if rule['transformer']
+        value = Transform(value, rule['transformer'])
+      end
     else
       puts "Potential rule failure for #{attribute} with #{rule} #{endpoint['uuid']} at #{endpoint['url']}, value will be nil"
       result[attribute] = nil
@@ -61,6 +64,17 @@ def ProcessEndpoint(endpoint, rule_set)
     result[attribute]=value
   end
   return result
+end
+
+def Transform(text, transformer)
+  uri = URI.parse("http://localhost:14080/content-transformer")
+  http = Net::HTTP.new(uri.host,uri.port)
+  req = Net::HTTP::Post.new(uri.path)
+  req.body = text
+  req['Content-Type'] = "text/html"
+  res = http.request(req)
+  puts res.body.force_encoding('iso-8859-1')
+  return res.body.force_encoding('iso-8859-1')
 end
 
 failures = {}
@@ -107,8 +121,9 @@ end
 
 
 puts "Processed #{processed.length} brands"
-File.open("processed.json","w") do |f|
-  f.write(processed.to_json)
+File.open("processed.json","wb") do |f|
+  json = processed.to_json
+  f.write(json)
 end
 puts "There were #{failures.length} failures"
 File.open("failures.json","w") do |f|
