@@ -45,19 +45,17 @@ The deploy also works via git tag and you can also select the environment to dep
 ### PUT
 The only mandatory field is the uuid, and the uuid in the body must match the one used on the path.
 
-Every request results in an attempt to update that brand: unlike with GraphDB there is no check on whether the brand already exists and whether there are any changes between what's there and what's being written. We just do a MERGE which is Neo4j for create if not there, update if it is there.
-
 A successful PUT results in 200.
 
-We run queries in batches. If a batch fails, all failing requests will get a 500 server error response.
+Queries run in batches. If a batch fails, all failing requests will get a 500 server error response.
 
 Invalid json body input, or uuids that don't match between the path and the body will result in a 400 bad request response.
 
 Example:
-`curl -XPUT -H "X-Request-Id: 123" -H "Content-Type: application/json" localhost:8080/brands/3fa70485-3a57-3b9b-9449-774b001cd965 --data '{"uuid":"3fa70485-3a57-3b9b-9449-774b001cd965", "birthYear": 1974, "salutation": "Mr", "name":"Robert W. Addington", "identifiers":[{ "authority":"http://api.ft.com/system/FACTSET-PPL", "identifierValue":"000BJG-E"}]}'`
+`curl -XPUT -H "X-Request-Id: 123" -H "Content-Type: application/json" http://localhost:8080/brands/3fa70485-3a57-3b9b-9449-774b001cd965 --data '{"uuid":"3fa70485-3a57-3b9b-9449-774b001cd965", "birthYear": 1974, "salutation": "Mr", "name":"Robert W. Addington", "identifiers":[{ "authority":"http://api.ft.com/system/FACTSET-PPL", "identifierValue":"000BJG-E"}]}'`
 
 ### GET
-Thie internal read should return what got written (i.e., this isn't the public brand read API)
+The internal read should return what got written (i.e., this isn't the public brand read API)
 
 If not found, you'll get a 404 response.
 
@@ -66,15 +64,31 @@ Empty fields are omitted from the response.
 
 ### DELETE
 Will return 204 if successful, 404 if not found
-`curl -XDELETE -H "X-Request-Id: 123" localhost:8080/brands/3fa70485-3a57-3b9b-9449-774b001cd965`
+`curl -X DELETE -H "X-Request-Id: 123" localhost:8080/brands/3fa70485-3a57-3b9b-9449-774b001cd965`
 
 ### Admin endpoints
 Healthchecks: [http://localhost:8080/__health](http://localhost:8080/__health)
-
 Ping: [http://localhost:8080/ping](http://localhost:8080/ping) or [http://localhost:8080/__ping](http://localhost:8080/__ping)
+
+### Loading Data
+_*Disclamimer:* this is still a work in progress_
+* You will need to install Ruby (2.0+) and the [Nokogiri](http://www.nokogiri.org/) and JSON libraries
+  `gem install nokogiri json`
+  Be aware that nokogiri uses the libxml2 library and so does some complex compilation, which I've not tried on Windows
+* You will also need a version of the WordPress Article Transformer that has the new `HtmlTransformerResource` endpoint, which is currently available in the a [HtmlTransformer branch](http://git.svc.ft.com/projects/CP/repos/wordpress-article-transformer/commits/b1d23060f717364b40a6506f74429f9a290a2b71)
+* Run the wordpress-article-transformer, passing in the following command line arguments: `server wordpress-article-transformer.yaml`
+  By default this will start the transformer on port `14080`
+* `cd` into the `extractor` subdirectory and launch the `BrandExtractor.rb` script.
+  `ruby BrandExtractor.rb`
+* Assuming all goes well a `processed.json` file is written, any major failures are written to a `failures.json` file
+* Use the `up-restutil` and [jq](https://stedolan.github.io/jq/) tool to load the data via the write API
+  `jq '.[]' -c processed.json | up-restutil put-resources uuid http://localhost:8080/brands`
+* You can then use the private read API, public read API, or Neo4J browser to look at the data.
 
 
 ### Notes
+*The following is historical, see the Loading Data section for current instructions*
+There are a couple of sources of data used to extract the current brands and URLs for
 * Conversion of trig files to json via jq:
   ```
   rapper -i trig -o json ftdata-brands.trig | jq -c 'to_entries | .[] | { uuid: .key | ltrimstr("http://api.ft.com/things/"), prefLabel: .value["http://www.ft.com/ontology/core/prefLabel"][0].value, parentUUID: .value["http://www.ft.com/ontology/classification/isSubClassificationOf"][0].value | ltrimstr("http://api.ft.com/things/") }'

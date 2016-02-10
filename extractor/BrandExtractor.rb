@@ -73,7 +73,7 @@ def Transform(text, transformer)
   req.body = text
   req['Content-Type'] = "text/html"
   res = http.request(req)
-  puts res.body.force_encoding('iso-8859-1')
+  #puts res.body.force_encoding('iso-8859-1')
   return res.body.force_encoding('iso-8859-1')
 end
 
