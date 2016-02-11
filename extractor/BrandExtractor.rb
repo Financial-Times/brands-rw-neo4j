@@ -3,7 +3,7 @@
 require "nokogiri"
 require "open-uri"
 require 'json'
-require 'pp'
+require 'logger'
 require 'net/http'
 
 # Open the fromTrig.json file this gives lists of brands known according to grpahdb
@@ -19,6 +19,8 @@ require 'net/http'
 # If not then need to copy (subset of) business logic from transformer (aaaggh)
 
 # WARNING - HBD
+
+@log = Logger.new(STDOUT)
 
 trig_file = File.read('fromTrig.json')
 brand_file = File.read('BrandExtractor.json')
@@ -36,7 +38,6 @@ brands_json['endpoints'].each { |x| brands_uuids.push(x['uuid'])}
 def ProcessEndpoint(endpoint, rule_set)
   result = {}
   doc = Nokogiri::HTML(open(endpoint['url']))
-  puts "loaded #{endpoint['url']}"
   rule_set['rules'].each do |attribute, rule|
     thing = doc.at_css(rule['select'])
     unless thing.nil?
@@ -58,7 +59,7 @@ def ProcessEndpoint(endpoint, rule_set)
         value = Transform(value, rule['transformer'])
       end
     else
-      puts "Potential rule failure for #{attribute} with #{rule} #{endpoint['uuid']} at #{endpoint['url']}, value will be nil"
+      @log.warn "Nil value for #{attribute} with #{rule}"
       result[attribute] = nil
     end
     result[attribute]=value
@@ -88,6 +89,7 @@ brands_json['endpoints'].each do |endpoint|
       failures[endpoint['uuid']] = {message: "Unable to find a ruleset to process brand #{endpoint['uuid']} at #{endpoint['url']}"}
     else
       begin
+        @log.info "Processing #{endpoint['uuid']} at #{endpoint['url']}"
         data = ProcessEndpoint(endpoint, rule_set)
       rescue RuntimeError => re
         failures[endpoint['uuid']] = "Failure processing #{endpoint['uuid']} at #{endpoint['url']} #{re.message}"
@@ -95,25 +97,25 @@ brands_json['endpoints'].each do |endpoint|
     end
   end
   data['uuid'] = endpoint['uuid']
-  endpoint['parentUUID'].nil? ? nil : data['parentUUID'] = endpoint['parentUUID']
-  endpoint['prefLabel'].nil? ? nil : data['prefLabel'] = endpoint['prefLabel']
-  endpoint['strapline'].nil? ? nil : data['strapline'] = endpoint['strapline']
-  endpoint['description'].nil? ? nil : data['description'] = endpoint['description']
-  endpoint['descriptionXML'].nil? ? nil : data['descriptionXML'] = endpoint['descriptionXML']
-  endpoint['_imageUrl'].nil? ? nil : data['prefLabel'] = endpoint['_imageUrl']
+  data['parentUUID'] = endpoint['parentUUID'] || data['parentUUID']
+  data['prefLabel'] = endpoint['prefLabel'] || data['prefLabel']
+  data['strapline'] = endpoint['strapline'] || data['strapline']
+  data['description'] = endpoint['description'] || data['description']
+  data['descriptionXML'] = endpoint['descriptionXML'] || data['descriptionXML']
+  data['prefLabel'] = endpoint['_imageUrl'] || data['prefLabel']
   processed.push(data)
 end
 
-puts "Found #{trig_uuids.length()} uuids in trig file and #{brands_uuids.length()} uuids in brands file"
+@log.info "Found #{trig_uuids.length()} uuids in trig file and #{brands_uuids.length()} uuids in brands file"
 
 unless(brands_uuids - trig_uuids).empty?
-  puts "Found #{(brands_uuids - trig_uuids).length} uuids in trig file but not in brands"
+  @log.info "Found #{(brands_uuids - trig_uuids).length} uuids in trig file but not in brands"
   (brands_uuids - trig_uuids).each do |uuid|
     puts brands_json.endpoints.select {|e| e["uuid"] == uuid }
   end
 end
 unless (trig_uuids - brands_uuids).empty?
-  puts "Found #{(trig_uuids - brands_uuids).length} uuids in trig file but not in brands"
+  @log.info "Found #{(trig_uuids - brands_uuids).length} uuids in trig file but not in brands"
   (trig_uuids - brands_uuids).each do |uuid|
     puts trig_json.select {|trig| trig["uuid"] == uuid }
   end
