@@ -2,13 +2,26 @@
   "ruleSets" : {
     "WordPressAssanka" : {
       "prefLabel" : "Extract brand info from a WP FT Blog that uses Assanka plug-in",
-      "resultType" : "Brand",
       "rules" : {
         "prefLabel" : { "select": ".top-title" , "extract" : "text"},
         "strapLine" : { "select": ".top-subtitle", "extract" : "text"},
         "descriptionXML" : { "select" : "div.content-tab:nth-child(3)", "extract" : "inner_html", "transformer" : "HtmlTransformer"},
         "description" : { "select" : "div.content-tab:nth-child(3)", "extract" : "text", "filter" : "([^\\n^\\r\\t]*)"},
         "_imageUrl" : { "select" : ".top-background-image", "extract" : "style", "filter" : ".*\\((.*)\\)"}
+      }
+    },
+    "AboutLex" : {
+      "prefLabel" : "Special rule for extracting for About Lex",
+      "rules" : {
+        "descriptionXML" : { "select" : "#storyContent > p:nth-child(1)", "extract" : "inner_html", "transformer" : "HtmlTransformer"},
+        "description" : { "select" : "#storyContent > p:nth-child(1)", "extract" : "text", "filter" : "([^\\n^\\r\\t]*)"}
+      }
+    },
+    "MarketsLive" : {
+      "prefLabel" : "Special rule for extracting for MarketsLive",
+      "rules" : {
+        "descriptionXML" : { "select" : ".entry-content > p:nth-child(2)", "extract" : "inner_html", "transformer" : "HtmlTransformer"},
+        "description" : { "select" : ".entry-content > p:nth-child(2)", "extract" : "text", "filter" : "([^\\n^\\r\\t]*)"}
       }
     }
   },
@@ -61,7 +74,9 @@
       "parentUUID" : "dbb0bdae-1f0c-11e4-b0cb-b2227cce2b54",
       "url" : "http://ftalphaville.ft.com",
       "prefLabel":"FT Alphaville",
-      "ruleSet" : "UNKNOWN"
+      "description" : "Market insight: Instant market news and commentary",
+      "descriptionXML" : "<body><p>Market insight: Instant market news and commentary</p>",
+      "ruleSet" : null
     },
     {
       "uuid" : "0cfee514-db0b-4474-b7a6-bf4db16a1380",
@@ -134,7 +149,8 @@
       "uuid":"2d3e16e0-61cb-4322-8aff-3b01c59f4daa",
       "prefLabel":"Lex",
       "parentUUID":"dbb0bdae-1f0c-11e4-b0cb-b2227cce2b54",
-      "ruleSet" : null
+      "url" : "http://www.ft.com/lex/about",
+      "ruleSet" : "AboutLex"
     },
     {
       "uuid" : "e180d0e0-9d13-4212-9696-f86ef197d2bd",
@@ -160,6 +176,12 @@
       "url" : "http://www.ft.com/fastft",
       "prefLabel" : "fastFT",
       "ruleSet" : "UNKNOWN"
+    },
+    {
+      "uuid" : "2a205d91-bb3a-4ed8-9bd2-32fb25d11c61",
+      "parentUUID":"89d15f70-640d-11e4-9803-0800200c9a66",
+      "url" : "http://ftalphaville.ft.com/marketslive/",
+      "ruleSet" : "MarketsLive"
     }
   ]
 }
