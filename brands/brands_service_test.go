@@ -42,7 +42,7 @@ func TestCreateNotAllValuesPresent(t *testing.T) {
 	cleanUp(validSkeletonBrand.UUID, t)
 }
 
-func TestDeleteExitingBrand(t *testing.T) {
+func TestDeleteExistingBrand(t *testing.T) {
 	driver := getCypherDriver(t)
 	err := driver.Write(validSimpleBrand)
 	assert.NoError(t, err)
