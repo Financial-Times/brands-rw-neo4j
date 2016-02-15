@@ -10,9 +10,3 @@ type Brand struct {
 	DescriptionXML string `json:"descriptionXML"`
 	ImageURL       string `json:"_imageUrl"` // TODO this is a temporary thing - needs to be integrated into images properly
 }
-
-// Identifier says where the info comes from
-type Identifier struct {
-	Authority       string `json:"authority"`
-	IdentifierValue string `json:"identifierValue"`
-}
