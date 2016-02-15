@@ -3,7 +3,7 @@
 require "nokogiri"
 require "open-uri"
 require 'json'
-require 'logger'
+require 'logger/colors'
 require 'net/http'
 
 # Open the fromTrig.json file this gives lists of brands known according to grpahdb
@@ -121,13 +121,13 @@ unless (trig_uuids - brands_uuids).empty?
   end
 end
 
-
-puts "Processed #{processed.length} brands"
-File.open("processed.json","wb") do |f|
+File.open("processed.json","w") do |f|
   json = processed.to_json
   f.write(json)
 end
-puts "There were #{failures.length} failures"
 File.open("failures.json","w") do |f|
   f.write(failures.to_json)
 end
+
+@log.error "There were #{failures.length} failures, see failures.json for details" if failures.length >0
+@log.info "Total of #{processed.length} brands processed and written to processed.json"
