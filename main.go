@@ -62,7 +62,7 @@ func makeCheck(service baseftrwapp.Service, cr neoutils.CypherRunner) v1a.Check 
 	return v1a.Check{
 		BusinessImpact:   "Cannot read/write brands via this writer",
 		Name:             "Check connectivity to Neo4j - neoUrl is a parameter in hieradata for this service",
-		PanicGuide:       "https://sites.google.com/a/ft.com/ft-technology-service-transition/home/run-book-library/draftbrandsreadwritemicroservicedanmurphyftcom20160215",
+		PanicGuide:       "https://sites.google.com/a/ft.com/ft-technology-service-transition/home/run-book-library/brand-rw-neo4j",
 		Severity:         1,
 		TechnicalSummary: fmt.Sprintf("Cannot connect to Neo4j instance %s with at least one brand loaded in it", cr),
 		Checker:          func() (string, error) { return "", service.Check() },

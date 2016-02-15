@@ -2,7 +2,7 @@
 
 __An API for reading/writing brands into Neo4j. Expects the brands json supplied to be in the format that comes out of the brands extractor.__
 
-[Runbook for service](https://sites.google.com/a/ft.com/ft-technology-service-transition/home/run-book-library/draftbrandsreadwritemicroservicedanmurphyftcom20160215)
+[Runbook for service](https://sites.google.com/a/ft.com/ft-technology-service-transition/home/run-book-library/brand-rw-neo4j)
 
 ## Installation or Update
 `go get -u github.com/Financial-Times/brands-rw-neo4j`
@@ -52,7 +52,7 @@ curl -X DELETE -H "X-Request-Id: 123" localhost:8080/brands/dbb0bdae-1f0c-11e4-b
 * Ping: [http://localhost:8080/ping](http://localhost:8080/ping) or [http://localhost:8080/__ping](http://localhost:8080/__ping)
 
 ### Loading Data
-_*Disclamimer:* this is still a work in progress (the version of WPAT is not in prod)_
+_*Disclaimer:* this is still a work in progress (the version of WPAT is not in prod)_
 * You will need to install Ruby (2.0+) and the [Nokogiri](http://www.nokogiri.org/)
   `gem install nokogiri`
   Be aware that nokogiri uses the libxml2 library and so does some complex compilation, which can be problematic.
