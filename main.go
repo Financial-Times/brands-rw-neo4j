@@ -5,10 +5,10 @@ import (
 	_ "net/http/pprof"
 	"os"
 
-	"github.com/Financial-Times/base-ft-rw-app-go"
+	"github.com/Financial-Times/base-ft-rw-app-go/baseftrwapp"
 	"github.com/Financial-Times/brands-rw-neo4j/brands"
 	"github.com/Financial-Times/go-fthealth/v1a"
-	"github.com/Financial-Times/neo-utils-go"
+	"github.com/Financial-Times/neo-utils-go/neoutils"
 	log "github.com/Sirupsen/logrus"
 	"github.com/jawher/mow.cli"
 	"github.com/jmcvetta/neoism"
