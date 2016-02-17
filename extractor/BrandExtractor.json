@@ -119,7 +119,9 @@
       "parentUUID":"dbb0bdae-1f0c-11e4-b0cb-b2227cce2b54",
       "url" : "http://blogs.ft.com/photo-diary",
       "prefLabel":"FT Photo Diary",
-      "ruleSet" : "UNKNOWN"
+      "ruleSet" : null,
+      "description" : "Our picture desk showcases the best images from around the world",
+      "descriptionXML" : "<body>Our picture desk showcases the <strong>best images</strong> from around the world</body>"
     },
     {
       "uuid" : "8348b79b-5665-409c-8696-6904f9a26fc6",
@@ -175,7 +177,10 @@
       "parentUUID":"dbb0bdae-1f0c-11e4-b0cb-b2227cce2b54",
       "url" : "http://www.ft.com/fastft",
       "prefLabel" : "fastFT",
-      "ruleSet" : "UNKNOWN"
+      "ruleSet" : null,
+      "strapline" :"Market-moving news and views, 24 hours a day",
+      "description" : "Fast FT is a global team working across timezones to give you market-moving news and views twenty-four hours a day, five days a week",
+      "descriptionXML" : "<body>Fast FT is a global team working across timezones to give you market-moving news and views twenty-four hours a day, five days a week</body>"
     },
     {
       "uuid" : "2a205d91-bb3a-4ed8-9bd2-32fb25d11c61",
