@@ -4,7 +4,7 @@
       "prefLabel" : "Extract brand info from a WP FT Blog that uses Assanka plug-in",
       "rules" : {
         "prefLabel" : { "select": ".top-title" , "extract" : "text"},
-        "strapLine" : { "select": ".top-subtitle", "extract" : "text"},
+        "strapline" : { "select": ".top-subtitle", "extract" : "text"},
         "descriptionXML" : { "select" : "div.content-tab:nth-child(3)", "extract" : "inner_html", "transformer" : "HtmlTransformer"},
         "description" : { "select" : "div.content-tab:nth-child(3)", "extract" : "text", "filter" : "([^\\n^\\r\\t]*)"},
         "_imageUrl" : { "select" : ".top-background-image", "extract" : "style", "filter" : ".*\\((.*)\\)"}
