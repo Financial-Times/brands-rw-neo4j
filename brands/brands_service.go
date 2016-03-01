@@ -2,6 +2,7 @@ package brands
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/Financial-Times/neo-utils-go/neoutils"
 	log "github.com/Sirupsen/logrus"
 	"github.com/jmcvetta/neoism"
@@ -94,13 +95,48 @@ func (s service) Write(thing interface{}) error {
                         `
 		params["parentUUID"] = brand.ParentUUID
 	}
-	query := &neoism.CypherQuery{
+	writeQuery := &neoism.CypherQuery{
 		Statement:  stmt,
 		Parameters: params,
 	}
 
-	return s.cypherRunner.CypherBatch([]*neoism.CypherQuery{query})
+	queries := []*neoism.CypherQuery{writeQuery}
 
+	for _, identifier := range brand.Identifiers {
+		if identifierLabels[identifier.Authority] == "" {
+			return requestError{fmt.Sprintf("This identifier type- %v, is not supported. Only '%v' and '%v' are currently supported", identifier.Authority, fsAuthority, tmeAuthority)}
+		}
+		queries = append(queries, identifierMerge(identifier, brand.UUID))
+	}
+
+	return s.cypherRunner.CypherBatch(queries)
+
+}
+
+const (
+	fsAuthority  = "http://api.ft.com/system/FACTSET-PPL"
+	tmeAuthority = "http://api.ft.com/system/FT-TME"
+)
+
+var identifierLabels = map[string]string{
+	fsAuthority:  "FactsetIdentifier",
+	tmeAuthority: "TMEIdentifier",
+}
+
+func identifierMerge(identifier identifier, uuid string) *neoism.CypherQuery {
+	statementTemplate := fmt.Sprintf(`MERGE (o:Thing {uuid:{uuid}})
+                                          MERGE (i:Identifier {value:{value} , authority:{authority}})
+                                          MERGE (o)<-[:IDENTIFIES]-(i)
+                                          set i:%s`, identifierLabels[identifier.Authority])
+	query := &neoism.CypherQuery{
+		Statement: statementTemplate,
+		Parameters: map[string]interface{}{
+			"uuid":      uuid,
+			"value":     identifier.IdentifierValue,
+			"authority": identifier.Authority,
+		},
+	}
+	return query
 }
 
 func (s service) Delete(uuid string) (bool, error) {
