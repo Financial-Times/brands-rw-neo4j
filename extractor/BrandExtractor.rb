@@ -3,7 +3,7 @@
 require "nokogiri"
 require "open-uri"
 require 'json'
-require 'logger/colors'
+require 'logger'
 require 'net/http'
 
 # Open the fromTrig.json file this gives lists of brands known according to grpahdb
