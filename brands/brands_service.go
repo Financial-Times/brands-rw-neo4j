@@ -44,10 +44,12 @@ func (s service) Read(uuid string) (interface{}, bool, error) {
 		Statement: `
                         MATCH (n:Brand {uuid:{uuid}})
                         OPTIONAL MATCH (n:Brand {uuid:{uuid}})-[:HAS_PARENT]->(p:Thing)
+                        OPTIONAL MATCH (n)<-[:IDENTIFIES]-(i:Identifier)
                         RETURN n.uuid AS uuid, n.prefLabel AS prefLabel,
                                 n.strapline AS strapline, p.uuid as parentUUID,
                                 n.descriptionXML AS descriptionXML,
-                                n.description AS description, n.imageUrl AS _imageUrl
+                                n.description AS description, n.imageUrl AS _imageUrl,
+                                collect({authority:i.authority, identifierValue:i.value}) as identifiers
                                 `,
 		Parameters: map[string]interface{}{
 			"uuid": uuid,
@@ -103,12 +105,8 @@ func (s service) Write(thing interface{}) error {
 	queries := []*neoism.CypherQuery{writeQuery}
 
 	for _, identifier := range brand.Identifiers {
-		if identifierLabels[identifier.Authority] == "" {
-			return requestError{fmt.Sprintf("This identifier type- %v, is not supported. Only '%v' and '%v' are currently supported", identifier.Authority, fsAuthority, tmeAuthority)}
-		}
 		queries = append(queries, identifierMerge(identifier, brand.UUID))
 	}
-
 	return s.cypherRunner.CypherBatch(queries)
 
 }
