@@ -97,12 +97,22 @@ func (s service) Write(thing interface{}) error {
                         `
 		params["parentUUID"] = brand.ParentUUID
 	}
+
+	deleteIdentifiers := &neoism.CypherQuery{
+		Statement: `MATCH (t:Thing {uuid:{uuid}})
+                                OPTIONAL MATCH (i:Identifier)-[ir:IDENTIFIES]->(t)
+                                DELETE ir, i`,
+		Parameters: map[string]interface{}{
+			"uuid": brand.UUID,
+		},
+	}
+
 	writeQuery := &neoism.CypherQuery{
 		Statement:  stmt,
 		Parameters: params,
 	}
 
-	queries := []*neoism.CypherQuery{writeQuery}
+	queries := []*neoism.CypherQuery{deleteIdentifiers, writeQuery}
 
 	for _, identifier := range brand.Identifiers {
 		queries = append(queries, identifierMerge(identifier, brand.UUID))
@@ -126,6 +136,7 @@ func identifierMerge(identifier identifier, uuid string) *neoism.CypherQuery {
                                           MERGE (i:Identifier {value:{value} , authority:{authority}})
                                           MERGE (o)<-[:IDENTIFIES]-(i)
                                           set i:%s`, identifierLabels[identifier.Authority])
+
 	query := &neoism.CypherQuery{
 		Statement: statementTemplate,
 		Parameters: map[string]interface{}{

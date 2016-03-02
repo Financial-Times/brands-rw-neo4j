@@ -12,8 +12,14 @@ import (
 )
 
 var validSkeletonBrand = Brand{
-	UUID:      "92f4ec09-436d-4092-a88c-96f54e34007c",
+	UUID:      "92f4ec09-436d-4092-a88c-96f54e34007d",
 	PrefLabel: "validSkeletonBrand",
+	Identifiers: []identifier{
+		identifier{
+			Authority:       tmeAuthority,
+			IdentifierValue: "111",
+		},
+	},
 }
 
 var validSimpleBrand = Brand{
@@ -23,6 +29,12 @@ var validSimpleBrand = Brand{
 	Description:    "This brand has no parent but otherwise has valid values for all fields",
 	DescriptionXML: "<body>This <i>brand</i> has no parent but otherwise has valid values for all fields</body>",
 	ImageURL:       "http://media.ft.com/validSimpleBrand.png",
+	Identifiers: []identifier{
+		identifier{
+			Authority:       tmeAuthority,
+			IdentifierValue: "123",
+		},
+	},
 }
 
 var validChildBrand = Brand{
@@ -33,6 +45,12 @@ var validChildBrand = Brand{
 	Description:    "This brand has a parent and valid values for all fields",
 	DescriptionXML: "<body>This <i>brand</i> has a parent and valid values for all fields</body>",
 	ImageURL:       "http://media.ft.com/validChildBrand.png",
+	Identifiers: []identifier{
+		identifier{
+			Authority:       tmeAuthority,
+			IdentifierValue: "123123",
+		},
+	},
 }
 
 func TestCreateNotAllValuesPresent(t *testing.T) {
@@ -62,6 +80,12 @@ func TestCreateHandlesSpecialCharacters(t *testing.T) {
 		UUID:        "327af339-39d4-4c7b-8c06-9f80211ea93d",
 		PrefLabel:   "specialCharBrand",
 		Description: "This brand has a heart \u2665 and smiley \u263A",
+		Identifiers: []identifier{
+			identifier{
+				Authority:       tmeAuthority,
+				IdentifierValue: "1111",
+			},
+		},
 	}
 	err := getCypherDriver(t).Write(specialCharBrand)
 	assert.NoError(t, err)
