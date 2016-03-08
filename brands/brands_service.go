@@ -149,6 +149,21 @@ func identifierMerge(identifier identifier, uuid string) *neoism.CypherQuery {
 }
 
 func (s service) Delete(uuid string) (bool, error) {
+	deleteIdentifiers := &neoism.CypherQuery{
+		Statement: `MATCH (t:Thing {uuid:{uuid}})
+                                OPTIONAL MATCH (i:Identifier)-[ir:IDENTIFIES]->(t)
+                                DELETE ir
+                                WITH i
+                                MATCH (i)-[ir2:IDENTIFIES]->(:Thing)
+                                WITH i, count(ir2) as c
+                                WHERE c = 0
+                                DELETE i
+                                `,
+		Parameters: map[string]interface{}{
+			"uuid": uuid,
+		},
+	}
+
 	clearNode := &neoism.CypherQuery{
 		Statement: `
 			MATCH (n:Thing {uuid: {uuid}})
@@ -177,7 +192,7 @@ func (s service) Delete(uuid string) (bool, error) {
 		},
 	}
 
-	err := s.cypherRunner.CypherBatch([]*neoism.CypherQuery{clearNode, removeNodeIfUnused})
+	err := s.cypherRunner.CypherBatch([]*neoism.CypherQuery{deleteIdentifiers, clearNode, removeNodeIfUnused})
 
 	s1, err := clearNode.Stats()
 	if err != nil {
