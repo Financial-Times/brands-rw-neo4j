@@ -23,9 +23,10 @@ func NewCypherBrandsService(cypherRunner neoutils.CypherRunner, indexManager neo
 //Initialise the driver
 func (s service) Initialise() error {
 	entities := map[string]string{
-		"Thing":   "uuid",
-		"Concept": "uuid",
-		"Brand":   "uuid",
+		"Thing":      "uuid",
+		"Concept":    "uuid",
+		"Brand":      "uuid",
+		"Identifier": "uuid",
 	}
 	if err := neoutils.EnsureConstraints(s.indexManager, entities); err != nil {
 		return err
@@ -152,16 +153,24 @@ func (s service) Delete(uuid string) (bool, error) {
 	deleteIdentifiers := &neoism.CypherQuery{
 		Statement: `MATCH (t:Thing {uuid:{uuid}})
                                 OPTIONAL MATCH (i:Identifier)-[ir:IDENTIFIES]->(t)
-                                DELETE ir
-                                WITH i
-                                MATCH (i)-[ir2:IDENTIFIES]->(:Thing)
-                                WITH i, count(ir2) as c
-                                WHERE c = 0
-                                DELETE i
+                                WITH i, count(ir) as c, ir, t
+                                WHERE c = 1
+                                DELETE ir, i
                                 `,
 		Parameters: map[string]interface{}{
 			"uuid": uuid,
 		},
+	}
+
+	deleteOwnedRelationships := &neoism.CypherQuery{
+		Statement: `
+                        MATCH (n:Thing {uuid: {uuid}})-[p:HAS_PARENT]->(t:Thing)
+                        DELETE p
+                `,
+		Parameters: neoism.Props{
+			"uuid": uuid,
+		},
+		IncludeStats: true,
 	}
 
 	clearNode := &neoism.CypherQuery{
@@ -192,7 +201,7 @@ func (s service) Delete(uuid string) (bool, error) {
 		},
 	}
 
-	err := s.cypherRunner.CypherBatch([]*neoism.CypherQuery{deleteIdentifiers, clearNode, removeNodeIfUnused})
+	err := s.cypherRunner.CypherBatch([]*neoism.CypherQuery{deleteIdentifiers, deleteOwnedRelationships, clearNode, removeNodeIfUnused})
 
 	s1, err := clearNode.Stats()
 	if err != nil {

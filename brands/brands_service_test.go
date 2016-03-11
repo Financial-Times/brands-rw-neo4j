@@ -64,8 +64,15 @@ func TestDeleteExistingBrand(t *testing.T) {
 	driver := getCypherDriver(t)
 	err := driver.Write(validSimpleBrand)
 	assert.NoError(t, err)
+
 	done, err := getCypherDriver(t).Delete(validSimpleBrand.UUID)
+	assert.NoError(t, err)
 	assert.True(t, done)
+
+	person, found, err := getCypherDriver(t).Read(validSimpleBrand.UUID)
+	assert.NoError(t, err)
+	assert.EqualValues(t, Brand{}, person)
+	assert.False(t, found)
 }
 
 func TestCreateAllValuesPresent(t *testing.T) {
