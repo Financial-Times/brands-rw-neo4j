@@ -9,3 +9,5 @@ project_page 'https://github.com/Financial-Times/brands-rw-neo4j'
 
 ## Add dependencies, if any:
 dependency 'ft/go_service_profile', '>= 0.0.0'
+
+## Adding a comment.
