@@ -26,7 +26,7 @@ func (s service) Initialise() error {
 		"Thing":      "uuid",
 		"Concept":    "uuid",
 		"Brand":      "uuid",
-		"Identifier": "uuid",
+		"Identifier": "value",
 	}
 	if err := neoutils.EnsureConstraints(s.indexManager, entities); err != nil {
 		return err
