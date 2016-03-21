@@ -78,42 +78,51 @@ func (s service) Write(thing interface{}) error {
 		"description":    brand.Description,
 		"imageUrl":       brand.ImageURL,
 	}
-	stmt := `
-                OPTIONAL MATCH (:Brand {uuid:{uuid}})-[r:HAS_PARENT]->(:Brand)
-                DELETE r
-                MERGE (n:Thing {uuid: {uuid}})
-                SET n:Brand
-                SET n:Concept
-                SET n={props}
-                `
-	params := neoism.Props{
-		"uuid":  brand.UUID,
-		"props": brandProps,
-	}
-	parentUUID := brand.ParentUUID
-	if parentUUID != "" {
-		stmt += `
-                        MERGE (p:Thing {uuid:{parentUUID}})
-                        MERGE (n)-[:HAS_PARENT]->(p)
-                        `
-		params["parentUUID"] = brand.ParentUUID
-	}
 
-	deleteIdentifiers := &neoism.CypherQuery{
-		Statement: `MATCH (t:Thing {uuid:{uuid}})
-                                OPTIONAL MATCH (i:Identifier)-[ir:IDENTIFIES]->(t)
-                                DELETE ir, i`,
-		Parameters: map[string]interface{}{
+	deleteParent := &neoism.CypherQuery{
+		Statement: `
+                        MATCH (:Thing {uuid:{uuid}})-[r:HAS_PARENT]->(:Thing)
+                        DELETE r`,
+		Parameters: neoism.Props{
 			"uuid": brand.UUID,
 		},
 	}
 
-	writeQuery := &neoism.CypherQuery{
-		Statement:  stmt,
-		Parameters: params,
+	deleteIdentifiers := &neoism.CypherQuery{
+		Statement: `
+                        MATCH (t:Thing {uuid:{uuid}})
+                        OPTIONAL MATCH (i:Identifier)-[ir:IDENTIFIES]->(t)
+                        DELETE ir, i`,
+		Parameters: neoism.Props{
+			"uuid": brand.UUID,
+		},
 	}
 
-	queries := []*neoism.CypherQuery{deleteIdentifiers, writeQuery}
+	writeBrand := &neoism.CypherQuery{
+		Statement: `
+                        MATCH (:Thing {uuid:{uuid}})
+                        MERGE (n:Thing {uuid: {uuid}})
+                        SET n:Brand
+                        SET n:Concept
+                        SET n={props}`,
+		Parameters: neoism.Props{
+			"uuid":  brand.UUID,
+			"props": brandProps,
+		},
+	}
+	queries := []*neoism.CypherQuery{deleteParent, deleteIdentifiers, writeBrand}
+
+	if parentUUID := brand.ParentUUID; parentUUID != "" {
+		writeParent := &neoism.CypherQuery{
+			Statement: `
+                                MERGE (p:Thing {uuid:{parentUUID}})
+                                MERGE (n)-[:HAS_PARENT]->(p)`,
+			Parameters: neoism.Props{
+				"parentUUID": parentUUID,
+			},
+		}
+		queries = append(queries, writeParent)
+	}
 
 	for _, identifier := range brand.Identifiers {
 		queries = append(queries, identifierMerge(identifier, brand.UUID))
