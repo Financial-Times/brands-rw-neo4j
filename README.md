@@ -13,9 +13,13 @@ __An API for reading/writing brands into Neo4j. Expects the brands json supplied
 All arguments are optional, they default to a local Neo4j install on the default port (7474), application running on port 8080, batchSize of 1024, graphiteTCPAddress of "" (meaning metrics won't be written to Graphite), graphitePrefix of "" and logMetrics false.
 
 ## Building
-*TO BE COMPLETED / DOCUMENTED*
-
 This service is built in CircleCI and deployed via Jenkins.
+
+* The [Jenkins view](http://ftjen10085-lvpr-uk-p:8181/view/JOBS-brands-rw-neo4j/) lists the build & deploy jobs
+* The [Jenkins job](http://ftjen10085-lvpr-uk-p:8181/view/JOBS-brands-rw-neo4j/job/brands-rw-neo4j-0-build/) will build whenever a new tag is pushed
+* This will get automatically [deployed to test](http://ftjen10085-lvpr-uk-p:8181/view/JOBS-brands-rw-neo4j/job/brands-rw-neo4j-2-deploy-test/) if the build is successful
+* Ut can then be manually pushed to prod via the [deploy to prod](http://ftjen10085-lvpr-uk-p:8181/view/JOBS-brands-rw-neo4j/job/brands-rw-neo4j-4-deploy-production/) job
+
 
 ## Endpoints
 
