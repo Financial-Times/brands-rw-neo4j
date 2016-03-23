@@ -102,12 +102,15 @@ func TestCreateHandlesSpecialCharacters(t *testing.T) {
 }
 
 func TestUpdateWillRemovePropertiesNoLongerPresent(t *testing.T) {
-	err := getCypherDriver(t).Write(validSimpleBrand)
+	myBrand := validSimpleBrand
+	err := getCypherDriver(t).Write(myBrand)
+	readBrandAndCompare(myBrand, t)
 	assert.NoError(t, err)
-	err = getCypherDriver(t).Write(validSkeletonBrand)
+	myBrand.Description = ""
+	err = getCypherDriver(t).Write(myBrand)
 	assert.NoError(t, err)
-	readBrandAndCompare(validSkeletonBrand, t)
-	cleanUp(validSkeletonBrand.UUID, t)
+	readBrandAndCompare(myBrand, t)
+	cleanUp(myBrand.UUID, t)
 }
 
 func TestConnectivityCheck(t *testing.T) {
