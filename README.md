@@ -4,15 +4,17 @@ __An API for reading/writing brands into Neo4j. Expects the brands json supplied
 
 [Runbook for service](https://sites.google.com/a/ft.com/ft-technology-service-transition/home/run-book-library/brand-rw-neo4j)
 
-## Installation or Update
+## Developer Notes
+
+### Installation or Update
 `go get -u github.com/Financial-Times/brands-rw-neo4j`
 
-## Running
+### Running
 `$GOPATH/bin/brands-rw-neo4j --neo-url={neo4jUrl} --port={port} --batchSize=50 --graphiteTCPAddress=graphite.ft.com:2003 --graphitePrefix=content.{env}.brands.rw.neo4j.{hostname} --logMetrics=false`
 
 All arguments are optional, they default to a local Neo4j install on the default port (7474), application running on port 8080, batchSize of 1024, graphiteTCPAddress of "" (meaning metrics won't be written to Graphite), graphitePrefix of "" and logMetrics false.
 
-## Building
+### Building
 This service is built in CircleCI and deployed via Jenkins.
 
 * The [Jenkins view](http://ftjen10085-lvpr-uk-p:8181/view/JOBS-brands-rw-neo4j/) lists the build & deploy jobs
@@ -20,10 +22,21 @@ This service is built in CircleCI and deployed via Jenkins.
 * This will get automatically [deployed to test](http://ftjen10085-lvpr-uk-p:8181/view/JOBS-brands-rw-neo4j/job/brands-rw-neo4j-2-deploy-test/) if the build is successful
 * Ut can then be manually pushed to prod via the [deploy to prod](http://ftjen10085-lvpr-uk-p:8181/view/JOBS-brands-rw-neo4j/job/brands-rw-neo4j-4-deploy-production/) job
 
+## Loading Brand Data
+* A google sheet contains the set of brands.
+  * [Brand sheet for TEST](https://docs.google.com/spreadsheets/d/1wEdVRLtayZ6-XBfYM3vKAGaOV64cNJD3L8MlLM8-uFY)
+  * [Brand sheet for PROD](https://docs.google.com/spreadsheets/d/1Cq8_FyuiSajwn7d9AD0XuJlH1gthxF--5ZFa0JhvNqU)
+* This is then published via [Bertha](https://github.com/ft-interactive/bertha/wiki/Tutorial)
+* Exposed via the [Brands Transformer](http://git.svc.ft.com:8080/projects/CP/repos/brands-transformer)
+* Ingested via the standard [Instance Data Ingester](http://git.svc.ft.com:8080/projects/CP/repos/instance-data-ingester)
+* Uses the [WordPress article transformer](http://git.svc.ft.com:8080/projects/CP/repos/wordpress-article-transformer) to clean any html
+* Written to NEO4J via *this RW API*
+* Finally exposed via the [Public Brands API](https://github.com/Financial-Times/public-brands-api)
+* Concordance to TME identifiers is supported by the [Concordance API](https://github.com/Financial-Times/public-concordances-api)
 
-## Endpoints
+## API Endpoints
 
-/brands/{uuid}
+This API works, in the main, on the brands/{uuid} path.
 
 ### PUT
 The only mandatory field is the uuid, and the uuid in the body must match the one used on the path. A successful PUT results in 200.
@@ -54,29 +67,3 @@ curl -X DELETE -H "X-Request-Id: 123" localhost:8080/brands/dbb0bdae-1f0c-11e4-b
 ### Admin endpoints
 * Healthchecks: [http://localhost:8080/__health](http://localhost:8080/__health)
 * Ping: [http://localhost:8080/ping](http://localhost:8080/ping) or [http://localhost:8080/__ping](http://localhost:8080/__ping)
-
-### Loading Data
-
-
-_*Disclaimer:* this is still a work in progress (the version of WPAT is not in prod)_
-* You will need to install Ruby (2.0+) and the [Nokogiri](http://www.nokogiri.org/)
-  `gem install nokogiri`
-  Be aware that nokogiri uses the libxml2 library and so does some complex compilation, which can be problematic.
-* You will also need a version of the WordPress Article Transformer that has the new `HtmlTransformerResource` endpoint, which is currently available in the a [HtmlTransformer branch](http://git.svc.ft.com/projects/CP/repos/wordpress-article-transformer/commits/b1d23060f717364b40a6506f74429f9a290a2b71)
-* Run the wordpress-article-transformer, passing in the following command line arguments: `server wordpress-article-transformer.yaml`
-  By default this will start the transformer on port `14080`
-* `cd` into the `extractor` subdirectory and launch the `BrandExtractor.rb` script.
-  `ruby BrandExtractor.rb`
-* Assuming all goes well a `processed.json` file is written, any major failures are written to a `failures.json` file
-* Use the `up-restutil` and [jq](https://stedolan.github.io/jq/) tool to load the data via the write API
-  `jq '.[]' -c processed.json | up-restutil put-resources uuid http://localhost:8080/brands`
-* You can then use the private read API, public read API, or Neo4J browser to look at the data.
-
-
-### Notes
-_The following is historical. The resulting file is currently stored as [extractor/fromTrig.json](https://github.com/Financial-Times/brands-rw-neo4j/blob/master/extractor/fromTrig.json)_
-* Get the currently known set of Brands from [Semantic Data Ontologies Repository](http://git.svc.ft.com/projects/CP/repos/semantic-data-ontologies/browse/src/main/resources/ontology/ft/instance_data/ftdata-brands.trig)
-* Conversion of trig files to json via [rapper](https://apps.ubuntu.com/cat/applications/precise/raptor2-utils/) and [jq](https://stedolan.github.io/jq/):
-  ```
-  rapper -i trig -o json ftdata-brands.trig | jq -c 'to_entries | .[] | { uuid: .key | ltrimstr("http://api.ft.com/things/"), prefLabel: .value["http://www.ft.com/ontology/core/prefLabel"][0].value, parentUUID: .value["http://www.ft.com/ontology/classification/isSubClassificationOf"][0].value | ltrimstr("http://api.ft.com/things/") }'
-  ```
