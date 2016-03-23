@@ -58,6 +58,7 @@ func (s service) Read(uuid string) (interface{}, bool, error) {
 		Result: &results,
 	}
 	err := s.cypherRunner.CypherBatch([]*neoism.CypherQuery{query})
+	fmt.Printf("Read brand : %s returned %+v\n", uuid, results)
 	log.Infof("Read brand : %s returned %+v\n", uuid, results)
 	if err != nil {
 		return Brand{}, false, err
@@ -79,7 +80,7 @@ func (s service) Write(thing interface{}) error {
 		"imageUrl":       brand.ImageURL,
 	}
 
-	deleteParent := &neoism.CypherQuery{
+	deleteParentRelationship := &neoism.CypherQuery{
 		Statement: `
                         MATCH (:Thing {uuid:{uuid}})-[r:HAS_PARENT]->(:Thing)
                         DELETE r`,
@@ -100,7 +101,6 @@ func (s service) Write(thing interface{}) error {
 
 	writeBrand := &neoism.CypherQuery{
 		Statement: `
-                        MATCH (:Thing {uuid:{uuid}})
                         MERGE (n:Thing {uuid: {uuid}})
                         SET n:Brand
                         SET n:Concept
@@ -110,15 +110,18 @@ func (s service) Write(thing interface{}) error {
 			"props": brandProps,
 		},
 	}
-	queries := []*neoism.CypherQuery{deleteParent, deleteIdentifiers, writeBrand}
+	queries := []*neoism.CypherQuery{deleteParentRelationship, deleteIdentifiers, writeBrand}
 
-	if parentUUID := brand.ParentUUID; parentUUID != "" {
+	if len(brand.ParentUUID) > 0 {
+		fmt.Printf("**HAS PARENT %s", brand.ParentUUID)
 		writeParent := &neoism.CypherQuery{
 			Statement: `
+                                MATCH (t:Thing {uuid:{uuid}})
                                 MERGE (p:Thing {uuid:{parentUUID}})
-                                MERGE (n)-[:HAS_PARENT]->(p)`,
+                                MERGE (t)-[:HAS_PARENT]->(p)`,
 			Parameters: neoism.Props{
-				"parentUUID": parentUUID,
+				"parentUUID": brand.ParentUUID,
+				"uuid":       brand.UUID,
 			},
 		}
 		queries = append(queries, writeParent)
@@ -127,8 +130,11 @@ func (s service) Write(thing interface{}) error {
 	for _, identifier := range brand.Identifiers {
 		queries = append(queries, identifierMerge(identifier, brand.UUID))
 	}
-	return s.cypherRunner.CypherBatch(queries)
+	for _, query := range queries {
+		fmt.Printf("About to run %+v\n", query)
+	}
 
+	return s.cypherRunner.CypherBatch(queries)
 }
 
 const (

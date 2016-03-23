@@ -3,6 +3,7 @@
 package brands
 
 import (
+	//"fmt"
 	"github.com/Financial-Times/base-ft-rw-app-go/baseftrwapp"
 	"github.com/Financial-Times/neo-utils-go/neoutils"
 	"github.com/jmcvetta/neoism"
@@ -126,9 +127,11 @@ func getCypherDriver(t *testing.T) (service baseftrwapp.Service) {
 }
 
 func readBrandAndCompare(expected Brand, t *testing.T) {
+	//fmt.Printf("Looking for %+v\n", expected.UUID)
 	actual, found, err := getCypherDriver(t).Read(expected.UUID)
 	assert.NoError(t, err)
 	assert.True(t, found)
+	//fmt.Printf("Found %+v\n", actual)
 	assert.EqualValues(t, expected, actual)
 }
 
