@@ -104,6 +104,7 @@ func (s service) Write(thing interface{}) error {
                         MERGE (n:Thing {uuid: {uuid}})
                         SET n:Brand
                         SET n:Concept
+												SET n:Classification
                         SET n={props}`,
 		Parameters: neoism.Props{
 			"uuid":  brand.UUID,
@@ -191,7 +192,7 @@ func (s service) Delete(uuid string) (bool, error) {
 	clearNode := &neoism.CypherQuery{
 		Statement: `
 			MATCH (n:Thing {uuid: {uuid}})
-			REMOVE n:Brand
+			REMOVE n:Brand:Concept:Classification
 			SET n={props}
 		`,
 		Parameters: neoism.Props{
