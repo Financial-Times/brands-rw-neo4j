@@ -25,13 +25,13 @@ func main() {
 		EnvVar: "NEO_URL",
 	})
 	graphiteTCPAddress := app.String(cli.StringOpt{
-		Name:   "graphite-tcp-address",
+		Name:   "graphiteTCPAddress",
 		Value:  "",
 		Desc:   "Graphite TCP address, e.g. graphite.ft.com:2003. Leave as default if you do NOT want to output to graphite (e.g. if running locally",
 		EnvVar: "GRAPHITE_ADDRESS",
 	})
 	graphitePrefix := app.String(cli.StringOpt{
-		Name:   "graphite-prefix",
+		Name:   "graphitePrefix",
 		Value:  "",
 		Desc:   "Prefix to use. Should start with content, include the environment, and the host name. e.g. coco.pre-prod.brands-rw-neo4j.1 or content.test.brands.rw.neo4j.ftaps58938-law1a-eu-t",
 		EnvVar: "GRAPHITE_PREFIX",
@@ -43,13 +43,13 @@ func main() {
 		EnvVar: "APP_PORT",
 	})
 	batchSize := app.Int(cli.IntOpt{
-		Name:   "batch-size",
+		Name:   "batchSize",
 		Value:  1024,
 		Desc:   "Maximum number of statements to execute per batch",
 		EnvVar: "BATCH_SIZE",
 	})
 	logMetrics := app.Bool(cli.BoolOpt{
-		Name:   "log-metrics",
+		Name:   "logMetrics",
 		Value:  false,
 		Desc:   "Whether to log metrics. Set to true if running locally and you want metrics output",
 		EnvVar: "LOG_METRICS",
