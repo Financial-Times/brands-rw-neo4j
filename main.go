@@ -17,18 +17,49 @@ import (
 
 func main() {
 
-	log.Infof("Application starting with args %s", os.Args)
+	app := cli.App("brands-rw-neo4j", "A RESTful API for managing Brands in neo4j")
+	neoURL := app.String(cli.StringOpt{
+		Name:   "neo-url",
+		Value:  "http://localhost:7474/db/data",
+		Desc:   "neo4j endpoint URL",
+		EnvVar: "NEO_URL",
+	})
+	graphiteTCPAddress := app.String(cli.StringOpt{
+		Name:   "graphite-tcp-address",
+		Value:  "",
+		Desc:   "Graphite TCP address, e.g. graphite.ft.com:2003. Leave as default if you do NOT want to output to graphite (e.g. if running locally",
+		EnvVar: "GRAPHITE_ADDRESS",
+	})
+	graphitePrefix := app.String(cli.StringOpt{
+		Name:   "graphite-prefix",
+		Value:  "",
+		Desc:   "Prefix to use. Should start with content, include the environment, and the host name. e.g. coco.pre-prod.brands-rw-neo4j.1 or content.test.brands.rw.neo4j.ftaps58938-law1a-eu-t",
+		EnvVar: "GRAPHITE_PREFIX",
+	})
+	port := app.Int(cli.IntOpt{
+		Name:   "port",
+		Value:  8080,
+		Desc:   "Port to listen on",
+		EnvVar: "APP_PORT",
+	})
+	batchSize := app.Int(cli.IntOpt{
+		Name:   "batch-size",
+		Value:  1024,
+		Desc:   "Maximum number of statements to execute per batch",
+		EnvVar: "BATCH_SIZE",
+	})
+	logMetrics := app.Bool(cli.BoolOpt{
+		Name:   "log-metrics",
+		Value:  false,
+		Desc:   "Whether to log metrics. Set to true if running locally and you want metrics output",
+		EnvVar: "LOG_METRICS",
+	})
 
-	app := cli.App("brands-rw-neo4j", "A RESTful API for managing People in neo4j")
-	neoURL := app.StringOpt("neo-url", "http://localhost:7474/db/data", "neo4j endpoint URL")
-	port := app.IntOpt("port", 8080, "Port to listen on")
-	env := app.StringOpt("env", "local", "environment this app is running in")
-	batchSize := app.IntOpt("batchSize", 1024, "Maximum number of statements to execute per batch")
-	graphiteTCPAddress := app.StringOpt("graphiteTCPAddress", "",
-		"Graphite TCP address, e.g. graphite.ft.com:2003. Leave as default if you do NOT want to output to graphite (e.g. if running locally)")
-	graphitePrefix := app.StringOpt("graphitePrefix", "",
-		"Prefix to use. Should start with content, include the environment, and the host name. e.g. content.test.brands.rw.neo4j.ftaps58938-law1a-eu-t")
-	logMetrics := app.BoolOpt("logMetrics", false, "Whether to log metrics. Set to true if running locally and you want metrics output")
+	env := app.String(cli.StringOpt{
+		Name:   "env",
+		Value:  "local",
+		Desc:   "environment this app is running in",
+	})
 
 	app.Action = func() {
 		db, err := neoism.Connect(*neoURL)
