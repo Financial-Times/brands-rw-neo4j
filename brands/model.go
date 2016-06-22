@@ -9,10 +9,18 @@ type Brand struct {
 	Strapline      string       `json:"strapline"`
 	DescriptionXML string       `json:"descriptionXML"`
 	ImageURL       string       `json:"_imageUrl"` // TODO this is a temporary thing - needs to be integrated into images properly
-	Identifiers    []identifier `json:"identifiers,omitempty"`
+	AlternativeIdentifiers alternativeIdentifiers `json:"alternativeIdentifiers"`
+	Types                  []string               `json:"types,omitempty"`
 }
 
-type identifier struct {
-	Authority       string `json:"authority"`
-	IdentifierValue string `json:"identifierValue"`
+type alternativeIdentifiers struct {
+	FactsetIdentifier  string `json:"factsetIdentifier,omitempty"`
+	UUIDS []string `json:"uuids"`
+	TME []string `json:"TME,omitempty"`
 }
+
+const (
+	factsetIdentifierLabel = "FactsetIdentifier"
+	uppIdentifierLabel = "UPPIdentifier"
+	tmeIdentifierLabel = "TMEIdentifier"
+)
