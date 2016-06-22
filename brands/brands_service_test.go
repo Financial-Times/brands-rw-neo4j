@@ -8,8 +8,8 @@ import (
 	"github.com/jmcvetta/neoism"
 	"github.com/stretchr/testify/assert"
 	"os"
-	"testing"
 	"sort"
+	"testing"
 )
 
 var defaultTypes = []string{"Thing", "Brand", "Concept", "Classification"}
@@ -18,20 +18,20 @@ var validSkeletonBrand = Brand{
 	UUID:      "92f4ec09-436d-4092-a88c-96f54e34007d",
 	PrefLabel: "validSkeletonBrand",
 	AlternativeIdentifiers: alternativeIdentifiers{
-			TME: []string{"111"},
-			UUIDS: []string{"92f4ec09-436d-4092-a88c-96f54e34007d"},
+		TME:   []string{"111"},
+		UUIDS: []string{"92f4ec09-436d-4092-a88c-96f54e34007d"},
 	},
-	Types:defaultTypes,
+	Types: defaultTypes,
 }
 
 var updatedSkeletonBrand = Brand{
 	UUID:      "92f4ec09-436d-4092-a88c-96f54e34007d",
 	PrefLabel: "validSkeletonBrand",
 	AlternativeIdentifiers: alternativeIdentifiers{
-		TME: []string{"123"},
+		TME:   []string{"123"},
 		UUIDS: []string{"92f4ec09-436d-4092-a88c-96f54e34007d"},
 	},
-	Types:defaultTypes,
+	Types: defaultTypes,
 }
 
 var validSimpleBrand = Brand{
@@ -42,10 +42,10 @@ var validSimpleBrand = Brand{
 	DescriptionXML: "<body>This <i>brand</i> has no parent but otherwise has valid values for all fields</body>",
 	ImageURL:       "http://media.ft.com/validSimpleBrand.png",
 	AlternativeIdentifiers: alternativeIdentifiers{
-			TME: []string{"123"},
-			UUIDS: []string{"92f4ec09-436d-4092-a88c-96f54e34007c"},
+		TME:   []string{"123"},
+		UUIDS: []string{"92f4ec09-436d-4092-a88c-96f54e34007c"},
 	},
-	Types:defaultTypes,
+	Types: defaultTypes,
 }
 
 var validChildBrand = Brand{
@@ -57,10 +57,10 @@ var validChildBrand = Brand{
 	DescriptionXML: "<body>This <i>brand</i> has a parent and valid values for all fields</body>",
 	ImageURL:       "http://media.ft.com/validChildBrand.png",
 	AlternativeIdentifiers: alternativeIdentifiers{
-			TME: []string{"123123"},
-			UUIDS: []string{"a806e270-edbc-423f-b8db-d21ae90e06c8"},
+		TME:   []string{"123123"},
+		UUIDS: []string{"a806e270-edbc-423f-b8db-d21ae90e06c8"},
 	},
-	Types:defaultTypes,
+	Types: defaultTypes,
 }
 
 func TestCreateNotAllValuesPresent(t *testing.T) {
@@ -98,10 +98,10 @@ func TestCreateHandlesSpecialCharacters(t *testing.T) {
 		PrefLabel:   "specialCharBrand",
 		Description: "This brand has a heart \u2665 and smiley \u263A",
 		AlternativeIdentifiers: alternativeIdentifiers{
-			TME: []string{"1111"},
+			TME:   []string{"1111"},
 			UUIDS: []string{"327af339-39d4-4c7b-8c06-9f80211ea93d"},
 		},
-		Types:defaultTypes,
+		Types: defaultTypes,
 	}
 	err := getCypherDriver(t).Write(specialCharBrand)
 	assert.NoError(t, err)

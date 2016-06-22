@@ -22,11 +22,11 @@ func NewCypherBrandsService(cypherRunner neoutils.CypherRunner, indexManager neo
 //Initialise the driver
 func (s service) Initialise() error {
 	return neoutils.EnsureConstraints(s.indexManager, map[string]string{
-		"Thing": "uuid",
-		"Concept":    "uuid",
-		"Brand":      "uuid",
-		"TMEIdentifier":  "value",
-		"UPPIdentifier":  "value"})
+		"Thing":         "uuid",
+		"Concept":       "uuid",
+		"Brand":         "uuid",
+		"TMEIdentifier": "value",
+		"UPPIdentifier": "value"})
 }
 
 func (s service) Read(uuid string) (interface{}, bool, error) {

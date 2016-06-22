@@ -56,9 +56,9 @@ func main() {
 	})
 
 	env := app.String(cli.StringOpt{
-		Name:   "env",
-		Value:  "local",
-		Desc:   "environment this app is running in",
+		Name:  "env",
+		Value: "local",
+		Desc:  "environment this app is running in",
 	})
 
 	app.Action = func() {
