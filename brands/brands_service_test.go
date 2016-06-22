@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-var defaultTypes = []string{"Thing", "Concept", "Classification", "Brand"}
+var defaultTypes = []string{"Thing", "Brand", "Concept", "Classification"}
 
 var validSkeletonBrand = Brand{
 	UUID:      "92f4ec09-436d-4092-a88c-96f54e34007d",
