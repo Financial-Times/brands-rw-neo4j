@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Financial-Times/neo-utils-go/neoutils"
-	log "github.com/Sirupsen/logrus"
 	"github.com/jmcvetta/neoism"
 )
 
@@ -55,8 +54,6 @@ func (s service) Read(uuid string) (interface{}, bool, error) {
 		Result: &results,
 	}
 	err := s.cypherRunner.CypherBatch([]*neoism.CypherQuery{query})
-	fmt.Printf("Read brand : %s returned %+v\n", uuid, results)
-	log.Infof("Read brand : %s returned %+v\n", uuid, results)
 	if err != nil {
 		return Brand{}, false, err
 	}
