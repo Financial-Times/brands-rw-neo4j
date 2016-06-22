@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+	"sort"
 )
 
 var defaultTypes = []string{"Thing", "Brand", "Concept", "Classification"}
@@ -19,7 +20,6 @@ var validSkeletonBrand = Brand{
 	AlternativeIdentifiers: alternativeIdentifiers{
 			TME: []string{"111"},
 			UUIDS: []string{"92f4ec09-436d-4092-a88c-96f54e34007d"},
-			FactsetIdentifier: "fsetId",
 	},
 	Types:defaultTypes,
 }
@@ -171,10 +171,15 @@ func getCypherDriver(t *testing.T) (service baseftrwapp.Service) {
 }
 
 func readBrandAndCompare(expected Brand, t *testing.T) {
+	sort.Strings(expected.Types)
+
 	actual, found, err := getCypherDriver(t).Read(expected.UUID)
 	assert.NoError(t, err)
 	assert.True(t, found)
-	assert.EqualValues(t, expected, actual)
+
+	actualBrand := actual.(Brand)
+	sort.Strings(actualBrand.Types)
+	assert.EqualValues(t, expected, actualBrand)
 }
 
 func cleanUp(uuid string, t *testing.T) {

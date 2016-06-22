@@ -25,8 +25,7 @@ func (s service) Initialise() error {
 		"Thing": "uuid",
 		"Concept":    "uuid",
 		"Brand":      "uuid",
-		"TmeIdentifier":  "value",
-		"FactsetIdentifier":  "value",
+		"TMEIdentifier":  "value",
 		"UPPIdentifier":  "value"})
 }
 
@@ -39,13 +38,12 @@ func (s service) Read(uuid string) (interface{}, bool, error) {
                         MATCH (n:Brand {uuid:{uuid}})
                         OPTIONAL MATCH (n)-[:HAS_PARENT]->(p:Thing)
                         OPTIONAL MATCH (upp:UPPIdentifier)-[:IDENTIFIES]->(n)
-			OPTIONAL MATCH (factset:FactsetIdentifier)-[:IDENTIFIES]->(n)
 			OPTIONAL MATCH (tme:TMEIdentifier)-[:IDENTIFIES]->(n)
                         RETURN n.uuid AS uuid, n.prefLabel AS prefLabel,
                                 n.strapline AS strapline, p.uuid as parentUUID,
                                 n.descriptionXML AS descriptionXML,
                                 n.description AS description, n.imageUrl AS _imageUrl,
-                                {uuids:collect(distinct upp.value), TME:collect(distinct tme.value), factsetIdentifier:factset.value} as alternativeIdentifiers,
+                                {uuids:collect(distinct upp.value), TME:collect(distinct tme.value)} as alternativeIdentifiers,
                                 labels(n) as types
                                 `,
 		Parameters: map[string]interface{}{
@@ -131,10 +129,6 @@ func (s service) Write(thing interface{}) error {
 	for _, alternativeUUID := range brand.AlternativeIdentifiers.UUIDS {
 		alternativeIdentifierQuery := createNewIdentifierQuery(brand.UUID, uppIdentifierLabel, alternativeUUID)
 		queries = append(queries, alternativeIdentifierQuery)
-	}
-
-	if brand.AlternativeIdentifiers.FactsetIdentifier != "" {
-		queries = append(queries, createNewIdentifierQuery(brand.UUID, factsetIdentifierLabel, brand.AlternativeIdentifiers.FactsetIdentifier))
 	}
 
 	return s.cypherRunner.CypherBatch(queries)

@@ -14,13 +14,11 @@ type Brand struct {
 }
 
 type alternativeIdentifiers struct {
-	FactsetIdentifier  string `json:"factsetIdentifier,omitempty"`
 	UUIDS []string `json:"uuids"`
 	TME []string `json:"TME,omitempty"`
 }
 
 const (
-	factsetIdentifierLabel = "FactsetIdentifier"
 	uppIdentifierLabel = "UPPIdentifier"
 	tmeIdentifierLabel = "TMEIdentifier"
 )
