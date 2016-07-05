@@ -25,5 +25,6 @@ RUN apk add --update bash \
   && mv brands-rw-neo4j /app \
   && apk del go git \
   && rm -rf $GOPATH /var/cache/apk/*
-CMD exec /app --neo-url=$NEO_URL --port=$APP_PORT --batchSize=$BATCH_SIZE --graphiteTCPAddress=$GRAPHITE_ADDRESS --graphitePrefix=$GRAPHITE_PREFIX --logMetrics=false --env=local
+
+CMD [ "/app" ]
 

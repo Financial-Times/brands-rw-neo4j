@@ -3,24 +3,35 @@
 package brands
 
 import (
-	//"fmt"
 	"github.com/Financial-Times/base-ft-rw-app-go/baseftrwapp"
 	"github.com/Financial-Times/neo-utils-go/neoutils"
 	"github.com/jmcvetta/neoism"
 	"github.com/stretchr/testify/assert"
 	"os"
+	"sort"
 	"testing"
 )
+
+var defaultTypes = []string{"Thing", "Brand", "Concept", "Classification"}
 
 var validSkeletonBrand = Brand{
 	UUID:      "92f4ec09-436d-4092-a88c-96f54e34007d",
 	PrefLabel: "validSkeletonBrand",
-	Identifiers: []identifier{
-		identifier{
-			Authority:       tmeAuthority,
-			IdentifierValue: "111",
-		},
+	AlternativeIdentifiers: alternativeIdentifiers{
+		TME:   []string{"111"},
+		UUIDS: []string{"92f4ec09-436d-4092-a88c-96f54e34007d"},
 	},
+	Types: defaultTypes,
+}
+
+var updatedSkeletonBrand = Brand{
+	UUID:      "92f4ec09-436d-4092-a88c-96f54e34007d",
+	PrefLabel: "validSkeletonBrand",
+	AlternativeIdentifiers: alternativeIdentifiers{
+		TME:   []string{"123"},
+		UUIDS: []string{"92f4ec09-436d-4092-a88c-96f54e34007d"},
+	},
+	Types: defaultTypes,
 }
 
 var validSimpleBrand = Brand{
@@ -30,12 +41,11 @@ var validSimpleBrand = Brand{
 	Description:    "This brand has no parent but otherwise has valid values for all fields",
 	DescriptionXML: "<body>This <i>brand</i> has no parent but otherwise has valid values for all fields</body>",
 	ImageURL:       "http://media.ft.com/validSimpleBrand.png",
-	Identifiers: []identifier{
-		identifier{
-			Authority:       tmeAuthority,
-			IdentifierValue: "123",
-		},
+	AlternativeIdentifiers: alternativeIdentifiers{
+		TME:   []string{"123"},
+		UUIDS: []string{"92f4ec09-436d-4092-a88c-96f54e34007c"},
 	},
+	Types: defaultTypes,
 }
 
 var validChildBrand = Brand{
@@ -46,12 +56,11 @@ var validChildBrand = Brand{
 	Description:    "This brand has a parent and valid values for all fields",
 	DescriptionXML: "<body>This <i>brand</i> has a parent and valid values for all fields</body>",
 	ImageURL:       "http://media.ft.com/validChildBrand.png",
-	Identifiers: []identifier{
-		identifier{
-			Authority:       tmeAuthority,
-			IdentifierValue: "123123",
-		},
+	AlternativeIdentifiers: alternativeIdentifiers{
+		TME:   []string{"123123"},
+		UUIDS: []string{"a806e270-edbc-423f-b8db-d21ae90e06c8"},
 	},
+	Types: defaultTypes,
 }
 
 func TestCreateNotAllValuesPresent(t *testing.T) {
@@ -88,12 +97,11 @@ func TestCreateHandlesSpecialCharacters(t *testing.T) {
 		UUID:        "327af339-39d4-4c7b-8c06-9f80211ea93d",
 		PrefLabel:   "specialCharBrand",
 		Description: "This brand has a heart \u2665 and smiley \u263A",
-		Identifiers: []identifier{
-			identifier{
-				Authority:       tmeAuthority,
-				IdentifierValue: "1111",
-			},
+		AlternativeIdentifiers: alternativeIdentifiers{
+			TME:   []string{"1111"},
+			UUIDS: []string{"327af339-39d4-4c7b-8c06-9f80211ea93d"},
 		},
+		Types: defaultTypes,
 	}
 	err := getCypherDriver(t).Write(specialCharBrand)
 	assert.NoError(t, err)
@@ -113,6 +121,39 @@ func TestUpdateWillRemovePropertiesNoLongerPresent(t *testing.T) {
 	cleanUp(myBrand.UUID, t)
 }
 
+func TestUpdateWillRemovePropertiesAndIdentifiersNoLongerPresent(t *testing.T) {
+	assert := assert.New(t)
+	brandsDriver := getCypherDriver(t)
+
+	assert.NoError(brandsDriver.Write(validSkeletonBrand), "Failed to write brand")
+	readBrandAndCompare(validSkeletonBrand, t)
+
+	assert.NoError(brandsDriver.Write(updatedSkeletonBrand), "Failed to write updated brand")
+	readBrandAndCompare(updatedSkeletonBrand, t)
+
+	cleanUp(updatedSkeletonBrand.UUID, t)
+}
+
+func TestCount(t *testing.T) {
+	assert := assert.New(t)
+	brandsDriver := getCypherDriver(t)
+
+	assert.NoError(brandsDriver.Write(validSkeletonBrand), "Failed to write brand")
+
+	nr, err := brandsDriver.Count()
+	assert.Equal(1, nr, "Should be 1 subjects in DB - count differs")
+	assert.NoError(err, "An unexpected error occurred during count")
+
+	assert.NoError(brandsDriver.Write(validSimpleBrand), "Failed to write brand")
+
+	nr, err = brandsDriver.Count()
+	assert.Equal(2, nr, "Should be 2 subjects in DB - count differs")
+	assert.NoError(err, "An unexpected error occurred during count")
+
+	cleanUp(validSkeletonBrand.UUID, t)
+	cleanUp(validSimpleBrand.UUID, t)
+}
+
 func TestConnectivityCheck(t *testing.T) {
 	driver := getCypherDriver(t)
 	err := driver.Check()
@@ -130,12 +171,15 @@ func getCypherDriver(t *testing.T) (service baseftrwapp.Service) {
 }
 
 func readBrandAndCompare(expected Brand, t *testing.T) {
-	//fmt.Printf("Looking for %+v\n", expected.UUID)
+	sort.Strings(expected.Types)
+
 	actual, found, err := getCypherDriver(t).Read(expected.UUID)
 	assert.NoError(t, err)
 	assert.True(t, found)
-	//fmt.Printf("Found %+v\n", actual)
-	assert.EqualValues(t, expected, actual)
+
+	actualBrand := actual.(Brand)
+	sort.Strings(actualBrand.Types)
+	assert.EqualValues(t, expected, actualBrand)
 }
 
 func cleanUp(uuid string, t *testing.T) {

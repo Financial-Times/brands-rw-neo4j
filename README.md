@@ -39,13 +39,16 @@ This service is built in CircleCI and deployed via Jenkins.
 This API works, in the main, on the brands/{uuid} path.
 
 ### PUT
-The only mandatory field is the uuid, and the uuid in the body must match the one used on the path. A successful PUT results in 200.
+The only mandatory fields are the uuid, and the alternativeIdentifier uuids (because the uuid is also listed in the alternativeIdentifier uuids list), and the uuid in the body must match the one used on the path. A successful PUT results in 200.
 Invalid json body input, or uuids that don't match between the path and the body will result in a 400 bad request response.
 
 Example:
+
 ```
-curl -H "Content-Type: application/json" -X PUT http://localhost:8080/brands/dbb0bdae-1f0c-11e4-b0cb-b2227cce2b54 --data '{"uuid": "dbb0bdae-1f0c-11e4-b0cb-b2227cce2b54","prefLabel": "Financial Times","strapline": "Make the right connections"}'
+curl -XPUT -H "X-Request-Id: 123" -H "Content-Type: application/json" localhost:8080/brands/v --data '{"uuid": "dbb0bdae-1f0c-11e4-b0cb-b2227cce2b54", "prefLabel": "Financial Times","strapline": "Make the right connections", "alternativeIdentifiers":{"uuids": ["dbb0bdae-1f0c-11e4-b0cb-b2227cce2b54","6a2a0170-6afa-4bcc-b427-430268d2ac50"], "TME":["foo","bar"]},"type":"Brand"}'
 ```
+
+The type field is not currently validated - instead, the Brands Writer writes type Brand and its parent types (Thing, Concept, Classification) as labels for the Brand.
 
 ### GET
 The internal read should return what got written (i.e., this isn't the public brand read API)

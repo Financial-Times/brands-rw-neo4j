@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Financial-Times/neo-utils-go/neoutils"
-	log "github.com/Sirupsen/logrus"
 	"github.com/jmcvetta/neoism"
 )
 
@@ -22,19 +21,12 @@ func NewCypherBrandsService(cypherRunner neoutils.CypherRunner, indexManager neo
 
 //Initialise the driver
 func (s service) Initialise() error {
-	entities := map[string]string{
-		"Thing":      "uuid",
-		"Concept":    "uuid",
-		"Brand":      "uuid",
-		"Identifier": "value",
-	}
-	if err := neoutils.EnsureConstraints(s.indexManager, entities); err != nil {
-		return err
-	}
-	if err := neoutils.EnsureIndexes(s.indexManager, entities); err != nil {
-		return err
-	}
-	return nil
+	return neoutils.EnsureConstraints(s.indexManager, map[string]string{
+		"Thing":         "uuid",
+		"Concept":       "uuid",
+		"Brand":         "uuid",
+		"TMEIdentifier": "value",
+		"UPPIdentifier": "value"})
 }
 
 func (s service) Read(uuid string) (interface{}, bool, error) {
@@ -44,13 +36,15 @@ func (s service) Read(uuid string) (interface{}, bool, error) {
 	query := &neoism.CypherQuery{
 		Statement: `
                         MATCH (n:Brand {uuid:{uuid}})
-                        OPTIONAL MATCH (n:Brand {uuid:{uuid}})-[:HAS_PARENT]->(p:Thing)
-                        OPTIONAL MATCH (n)<-[:IDENTIFIES]-(i:Identifier)
+                        OPTIONAL MATCH (n)-[:HAS_PARENT]->(p:Thing)
+                        OPTIONAL MATCH (upp:UPPIdentifier)-[:IDENTIFIES]->(n)
+			OPTIONAL MATCH (tme:TMEIdentifier)-[:IDENTIFIES]->(n)
                         RETURN n.uuid AS uuid, n.prefLabel AS prefLabel,
                                 n.strapline AS strapline, p.uuid as parentUUID,
                                 n.descriptionXML AS descriptionXML,
                                 n.description AS description, n.imageUrl AS _imageUrl,
-                                collect({authority:i.authority, identifierValue:i.value}) as identifiers
+                                {uuids:collect(distinct upp.value), TME:collect(distinct tme.value)} as alternativeIdentifiers,
+                                labels(n) as types
                                 `,
 		Parameters: map[string]interface{}{
 			"uuid": uuid,
@@ -58,8 +52,6 @@ func (s service) Read(uuid string) (interface{}, bool, error) {
 		Result: &results,
 	}
 	err := s.cypherRunner.CypherBatch([]*neoism.CypherQuery{query})
-	fmt.Printf("Read brand : %s returned %+v\n", uuid, results)
-	log.Infof("Read brand : %s returned %+v\n", uuid, results)
 	if err != nil {
 		return Brand{}, false, err
 	}
@@ -104,7 +96,7 @@ func (s service) Write(thing interface{}) error {
                         MERGE (n:Thing {uuid: {uuid}})
                         SET n:Brand
                         SET n:Concept
-												SET n:Classification
+			SET n:Classification
                         SET n={props}`,
 		Parameters: neoism.Props{
 			"uuid":  brand.UUID,
@@ -128,38 +120,30 @@ func (s service) Write(thing interface{}) error {
 		queries = append(queries, writeParent)
 	}
 
-	for _, identifier := range brand.Identifiers {
-		queries = append(queries, identifierMerge(identifier, brand.UUID))
+	//ADD all the IDENTIFIER nodes and IDENTIFIES relationships
+	for _, alternativeUUID := range brand.AlternativeIdentifiers.TME {
+		alternativeIdentifierQuery := createNewIdentifierQuery(brand.UUID, tmeIdentifierLabel, alternativeUUID)
+		queries = append(queries, alternativeIdentifierQuery)
 	}
-	for _, query := range queries {
-		fmt.Printf("About to run %+v\n", query)
+
+	for _, alternativeUUID := range brand.AlternativeIdentifiers.UUIDS {
+		alternativeIdentifierQuery := createNewIdentifierQuery(brand.UUID, uppIdentifierLabel, alternativeUUID)
+		queries = append(queries, alternativeIdentifierQuery)
 	}
 
 	return s.cypherRunner.CypherBatch(queries)
 }
 
-const (
-	fsAuthority  = "http://api.ft.com/system/FACTSET-PPL"
-	tmeAuthority = "http://api.ft.com/system/FT-TME"
-)
-
-var identifierLabels = map[string]string{
-	fsAuthority:  "FactsetIdentifier",
-	tmeAuthority: "TMEIdentifier",
-}
-
-func identifierMerge(identifier identifier, uuid string) *neoism.CypherQuery {
-	statementTemplate := fmt.Sprintf(`MERGE (o:Thing {uuid:{uuid}})
-                                          MERGE (i:Identifier {value:{value} , authority:{authority}})
-                                          MERGE (o)<-[:IDENTIFIES]-(i)
-                                          set i:%s`, identifierLabels[identifier.Authority])
-
+func createNewIdentifierQuery(uuid string, identifierLabel string, identifierValue string) *neoism.CypherQuery {
+	statementTemplate := fmt.Sprintf(`MERGE (t:Thing {uuid:{uuid}})
+					CREATE (i:Identifier {value:{value}})
+					MERGE (t)<-[:IDENTIFIES]-(i)
+					set i : %s `, identifierLabel)
 	query := &neoism.CypherQuery{
 		Statement: statementTemplate,
 		Parameters: map[string]interface{}{
-			"uuid":      uuid,
-			"value":     identifier.IdentifierValue,
-			"authority": identifier.Authority,
+			"uuid":  uuid,
+			"value": identifierValue,
 		},
 	}
 	return query
