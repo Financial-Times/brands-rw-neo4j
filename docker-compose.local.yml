@@ -1,0 +1,9 @@
+version: '2'
+services:
+  ft-neo4j:
+    image: coco/ft-neo4j:latest
+    environment:
+      NEO4J_AUTH: none
+    ports:
+      - "7474:7474"
+      - "7473:7473"
