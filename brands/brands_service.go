@@ -9,20 +9,19 @@ import (
 
 //service maintains info about runners and index managers
 type service struct {
-	cypherRunner neoutils.CypherRunner
-	indexManager neoutils.IndexManager
+	conn neoutils.NeoConnection
 }
 
 // NewCypherBrandsService provides functions for create, update, delete operations on brands in Neo4j,
 // plus other utility functions needed for a service
-func NewCypherBrandsService(cypherRunner neoutils.CypherRunner, indexManager neoutils.IndexManager) service {
-	return service{cypherRunner, indexManager}
+func NewCypherBrandsService(cypherRunner neoutils.NeoConnection) service {
+	return service{cypherRunner}
 }
 
 //Initialise the driver
 func (s service) Initialise() error {
 
-	err := neoutils.EnsureIndexes(s.indexManager,  map[string]string{
+	err := s.conn.EnsureIndexes(map[string]string{
 		"Identifier": "value",
 	})
 
@@ -30,7 +29,7 @@ func (s service) Initialise() error {
 		return err
 	}
 
-	return neoutils.EnsureConstraints(s.indexManager, map[string]string{
+	return s.conn.EnsureConstraints(map[string]string{
 		"Thing":         "uuid",
 		"Concept":       "uuid",
 		"Brand":         "uuid",
@@ -60,7 +59,7 @@ func (s service) Read(uuid string) (interface{}, bool, error) {
 		},
 		Result: &results,
 	}
-	err := s.cypherRunner.CypherBatch([]*neoism.CypherQuery{query})
+	err := s.conn.CypherBatch([]*neoism.CypherQuery{query})
 	if err != nil {
 		return Brand{}, false, err
 	}
@@ -140,7 +139,7 @@ func (s service) Write(thing interface{}) error {
 		queries = append(queries, alternativeIdentifierQuery)
 	}
 
-	return s.cypherRunner.CypherBatch(queries)
+	return s.conn.CypherBatch(queries)
 }
 
 func createNewIdentifierQuery(uuid string, identifierLabel string, identifierValue string) *neoism.CypherQuery {
@@ -210,7 +209,7 @@ func (s service) Delete(uuid string) (bool, error) {
 		},
 	}
 
-	err := s.cypherRunner.CypherBatch([]*neoism.CypherQuery{deleteIdentifiers, deleteOwnedRelationships, clearNode, removeNodeIfUnused})
+	err := s.conn.CypherBatch([]*neoism.CypherQuery{deleteIdentifiers, deleteOwnedRelationships, clearNode, removeNodeIfUnused})
 
 	s1, err := clearNode.Stats()
 	if err != nil {
@@ -232,7 +231,7 @@ func (s service) DecodeJSON(dec *json.Decoder) (interface{}, string, error) {
 }
 
 func (s service) Check() error {
-	return neoutils.Check(s.cypherRunner)
+	return neoutils.Check(s.conn)
 }
 
 func (s service) Count() (int, error) {
@@ -246,7 +245,7 @@ func (s service) Count() (int, error) {
 		Result:    &results,
 	}
 
-	err := s.cypherRunner.CypherBatch([]*neoism.CypherQuery{query})
+	err := s.conn.CypherBatch([]*neoism.CypherQuery{query})
 
 	if err != nil {
 		return 0, err

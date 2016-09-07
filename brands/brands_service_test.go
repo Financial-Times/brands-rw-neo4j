@@ -3,9 +3,7 @@
 package brands
 
 import (
-	"github.com/Financial-Times/base-ft-rw-app-go/baseftrwapp"
 	"github.com/Financial-Times/neo-utils-go/neoutils"
-	"github.com/jmcvetta/neoism"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"sort"
@@ -64,29 +62,29 @@ var validChildBrand = Brand{
 }
 
 func TestCreateNotAllValuesPresent(t *testing.T) {
-	err := getCypherDriver(t).Write(validSkeletonBrand)
+	err := getCypherDriver(getDatabaseConnection(t)).Write(validSkeletonBrand)
 	assert.NoError(t, err)
 	readBrandAndCompare(validSkeletonBrand, t)
 	cleanUp(validSkeletonBrand.UUID, t)
 }
 
 func TestDeleteExistingBrand(t *testing.T) {
-	driver := getCypherDriver(t)
+	driver := getCypherDriver(getDatabaseConnection(t))
 	err := driver.Write(validSimpleBrand)
 	assert.NoError(t, err)
 
-	done, err := getCypherDriver(t).Delete(validSimpleBrand.UUID)
+	done, err := getCypherDriver(getDatabaseConnection(t)).Delete(validSimpleBrand.UUID)
 	assert.NoError(t, err)
 	assert.True(t, done)
 
-	person, found, err := getCypherDriver(t).Read(validSimpleBrand.UUID)
+	person, found, err := getCypherDriver(getDatabaseConnection(t)).Read(validSimpleBrand.UUID)
 	assert.NoError(t, err)
 	assert.EqualValues(t, Brand{}, person)
 	assert.False(t, found)
 }
 
 func TestCreateAllValuesPresent(t *testing.T) {
-	err := getCypherDriver(t).Write(validChildBrand)
+	err := getCypherDriver(getDatabaseConnection(t)).Write(validChildBrand)
 	assert.NoError(t, err)
 	readBrandAndCompare(validChildBrand, t)
 	cleanUp(validChildBrand.UUID, t)
@@ -103,7 +101,7 @@ func TestCreateHandlesSpecialCharacters(t *testing.T) {
 		},
 		Types: defaultTypes,
 	}
-	err := getCypherDriver(t).Write(specialCharBrand)
+	err := getCypherDriver(getDatabaseConnection(t)).Write(specialCharBrand)
 	assert.NoError(t, err)
 	readBrandAndCompare(specialCharBrand, t)
 	cleanUp(specialCharBrand.UUID, t)
@@ -111,69 +109,76 @@ func TestCreateHandlesSpecialCharacters(t *testing.T) {
 
 func TestUpdateWillRemovePropertiesNoLongerPresent(t *testing.T) {
 	myBrand := validSimpleBrand
-	err := getCypherDriver(t).Write(myBrand)
+	err := getCypherDriver(getDatabaseConnection(t)).Write(myBrand)
 	readBrandAndCompare(myBrand, t)
 	assert.NoError(t, err)
 	myBrand.Description = ""
-	err = getCypherDriver(t).Write(myBrand)
+	err = getCypherDriver(getDatabaseConnection(t)).Write(myBrand)
 	assert.NoError(t, err)
 	readBrandAndCompare(myBrand, t)
 	cleanUp(myBrand.UUID, t)
 }
 
 func TestUpdateWillRemovePropertiesAndIdentifiersNoLongerPresent(t *testing.T) {
-	assert := assert.New(t)
-	brandsDriver := getCypherDriver(t)
+	brandsDriver := getCypherDriver(getDatabaseConnection(t))
 
-	assert.NoError(brandsDriver.Write(validSkeletonBrand), "Failed to write brand")
+	assert.NoError(t, brandsDriver.Write(validSkeletonBrand), "Failed to write brand")
 	readBrandAndCompare(validSkeletonBrand, t)
 
-	assert.NoError(brandsDriver.Write(updatedSkeletonBrand), "Failed to write updated brand")
+	assert.NoError(t, brandsDriver.Write(updatedSkeletonBrand), "Failed to write updated brand")
 	readBrandAndCompare(updatedSkeletonBrand, t)
 
 	cleanUp(updatedSkeletonBrand.UUID, t)
 }
 
 func TestCount(t *testing.T) {
-	assert := assert.New(t)
-	brandsDriver := getCypherDriver(t)
+	brandsDriver := getCypherDriver(getDatabaseConnection(t))
 
-	assert.NoError(brandsDriver.Write(validSkeletonBrand), "Failed to write brand")
+	assert.NoError(t, brandsDriver.Write(validSkeletonBrand), "Failed to write brand")
 
 	nr, err := brandsDriver.Count()
-	assert.Equal(1, nr, "Should be 1 subjects in DB - count differs")
-	assert.NoError(err, "An unexpected error occurred during count")
+	assert.Equal(t, 1, nr, "Should be 1 subjects in DB - count differs")
+	assert.NoError(t, err, "An unexpected error occurred during count")
 
-	assert.NoError(brandsDriver.Write(validSimpleBrand), "Failed to write brand")
+	assert.NoError(t, brandsDriver.Write(validSimpleBrand), "Failed to write brand")
 
 	nr, err = brandsDriver.Count()
-	assert.Equal(2, nr, "Should be 2 subjects in DB - count differs")
-	assert.NoError(err, "An unexpected error occurred during count")
+	assert.Equal(t, 2, nr, "Should be 2 subjects in DB - count differs")
+	assert.NoError(t, err, "An unexpected error occurred during count")
 
 	cleanUp(validSkeletonBrand.UUID, t)
 	cleanUp(validSimpleBrand.UUID, t)
 }
 
 func TestConnectivityCheck(t *testing.T) {
-	driver := getCypherDriver(t)
+	driver := getCypherDriver(getDatabaseConnection(t))
 	err := driver.Check()
 	assert.NoError(t, err)
 }
 
-func getCypherDriver(t *testing.T) (service baseftrwapp.Service) {
+func getDatabaseConnection(t *testing.T) neoutils.NeoConnection {
 	url := os.Getenv("NEO4J_TEST_URL")
 	if url == "" {
 		url = "http://localhost:7474/db/data"
 	}
-	db, err := neoism.Connect(url)
-	assert.NoError(t, err, "Error setting up connection to %s", url)
-	return NewCypherBrandsService(neoutils.StringerDb{db}, db)
+
+	conf := neoutils.DefaultConnectionConfig()
+	conf.Transactional = false
+	db, err := neoutils.Connect(url, conf)
+	assert.NoError(t, err, "Failed to connect to Neo4j")
+	return db
+}
+
+func getCypherDriver(db neoutils.NeoConnection) service {
+	cr := NewCypherBrandsService(db)
+	cr.Initialise()
+	return cr
 }
 
 func readBrandAndCompare(expected Brand, t *testing.T) {
 	sort.Strings(expected.Types)
 
-	actual, found, err := getCypherDriver(t).Read(expected.UUID)
+	actual, found, err := getCypherDriver(getDatabaseConnection(t)).Read(expected.UUID)
 	assert.NoError(t, err)
 	assert.True(t, found)
 
@@ -183,7 +188,7 @@ func readBrandAndCompare(expected Brand, t *testing.T) {
 }
 
 func cleanUp(uuid string, t *testing.T) {
-	found, err := getCypherDriver(t).Delete(uuid)
+	found, err := getCypherDriver(getDatabaseConnection(t)).Delete(uuid)
 	assert.True(t, found, "Didn't manage to delete brand for uuid %s", uuid)
 	assert.NoError(t, err, "Error deleting brand for uuid %s", uuid)
 }

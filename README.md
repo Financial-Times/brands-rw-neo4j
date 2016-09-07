@@ -45,7 +45,7 @@ Invalid json body input, or uuids that don't match between the path and the body
 Example:
 
 ```
-curl -XPUT -H "X-Request-Id: 123" -H "Content-Type: application/json" localhost:8080/brands/v --data '{"uuid": "dbb0bdae-1f0c-11e4-b0cb-b2227cce2b54", "prefLabel": "Financial Times","strapline": "Make the right connections", "alternativeIdentifiers":{"uuids": ["dbb0bdae-1f0c-11e4-b0cb-b2227cce2b54","6a2a0170-6afa-4bcc-b427-430268d2ac50"], "TME":["foo","bar"]},"type":"Brand"}'
+curl -XPUT -H "X-Request-Id: 123" -H "Content-Type: application/json" localhost:8080/brands/dbb0bdae-1f0c-11e4-b0cb-b2227cce2b54 --data '{"uuid": "dbb0bdae-1f0c-11e4-b0cb-b2227cce2b54", "prefLabel": "Financial Times","strapline": "Make the right connections", "alternativeIdentifiers":{"uuids": ["dbb0bdae-1f0c-11e4-b0cb-b2227cce2b54","6a2a0170-6afa-4bcc-b427-430268d2ac50"], "TME":["foo","bar"]},"type":"Brand"}'
 ```
 
 The type field is not currently validated - instead, the Brands Writer writes type Brand and its parent types (Thing, Concept, Classification) as labels for the Brand.
