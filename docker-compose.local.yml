@@ -1,7 +1,7 @@
 version: '2'
 services:
   ft-neo4j:
-    image: coco/ft-neo4j:latest
+    image: coco/ft-neo4j:2.3.6-2
     environment:
       NEO4J_AUTH: none
     ports:
