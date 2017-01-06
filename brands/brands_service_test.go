@@ -269,6 +269,7 @@ func writeJSONToService(service baseftrwapp.Service, pathToJSONFile string, asse
 
 func readBrandAndCompare(expected Brand, t *testing.T, db neoutils.NeoConnection) {
 	sort.Strings(expected.Types)
+	sort.Strings(expected.Aliases)
 
 	actual, found, err := getCypherDriver(db).Read(expected.UUID)
 	assert.NoError(t, err, "Failed to read brand")
@@ -277,6 +278,9 @@ func readBrandAndCompare(expected Brand, t *testing.T, db neoutils.NeoConnection
 	actualBrand := actual.(Brand)
 	sort.Strings(actualBrand.Types)
 	assert.EqualValues(t, expected, actualBrand, "Types are not what is expected")
+
+	sort.Strings(actualBrand.Aliases)
+	assert.EqualValues(t, expected, actualBrand, "Aliases are not what is expected")
 }
 
 func getCypherDriver(db neoutils.NeoConnection) service {

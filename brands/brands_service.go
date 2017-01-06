@@ -50,7 +50,7 @@ func (s service) Read(uuid string) (interface{}, bool, error) {
                         RETURN n.uuid AS uuid, n.prefLabel AS prefLabel,
                                 n.strapline AS strapline, p.uuid as parentUUID,
                                 n.descriptionXML AS descriptionXML,
-                                n.description AS description, n.imageUrl AS _imageUrl,
+                                n.description AS description, n.imageUrl AS _imageUrl, n.aliases as aliases,
                                 {uuids:collect(distinct upp.value), TME:collect(distinct tme.value)} as alternativeIdentifiers,
                                 labels(n) as types
                                 `,
@@ -71,7 +71,7 @@ func (s service) Read(uuid string) (interface{}, bool, error) {
 
 func (s service) Write(thing interface{}) error {
 	brand := thing.(Brand)
-	brandProps := map[string]string{
+	brandProps := map[string]interface{}{
 		"uuid":           brand.UUID,
 		"prefLabel":      brand.PrefLabel,
 		"strapline":      brand.Strapline,
@@ -79,6 +79,17 @@ func (s service) Write(thing interface{}) error {
 		"description":    brand.Description,
 		"imageUrl":       brand.ImageURL,
 	}
+
+	var aliases []string
+
+	for _, alias := range brand.Aliases {
+		aliases = append(aliases, alias)
+	}
+
+	if len(aliases) > 0 {
+		brandProps["aliases"] = aliases
+	}
+
 
 	deleteParentRelationship := &neoism.CypherQuery{
 		Statement: `

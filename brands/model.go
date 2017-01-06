@@ -11,6 +11,7 @@ type Brand struct {
 	ImageURL               string                 `json:"_imageUrl"` // TODO this is a temporary thing - needs to be integrated into images properly
 	AlternativeIdentifiers alternativeIdentifiers `json:"alternativeIdentifiers"`
 	Types                  []string               `json:"types,omitempty"`
+	Aliases                []string               `json:"aliases,omitempty"`
 }
 
 type alternativeIdentifiers struct {
