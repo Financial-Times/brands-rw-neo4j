@@ -1,0 +1,13 @@
+{
+  "uuid": "3fc9fe3e-af8c-4f7f-961a-e5065392bb31",
+  "title": "Bitcoin story makes Newsweek the headline",
+  "byline": "By Matthew Garrahan in Los Angeles",
+  "identifiers": [
+    {
+      "authority": "http://api.ft.com/system/FTCOM-METHODE",
+      "identifierValue": "3fc9fe3e-af8c-4f7f-961a-e5065392bb31"
+    }
+  ],
+  "publishedDate": "2014-03-07T19:18:01.000Z",
+  "body": "<body><ft-content type=\"http://www.ft.com/ontology/content/ImageSet\" url=\"http://test.api.ft.com/content/666f7190-a5d4-11e3-278b-978e959e1c97\" data-embedded=\"true\"></ft-content><p>On paper, it looked like the story of the year. Newsweek, it appeared, had identified the founder of <a href=\"http://www.ft.com/intl/indepth/bitcoin\" title=\"Bitcoin in depth - FT.com\">Bitcoin</a>. </p>\n</body>"
+}
