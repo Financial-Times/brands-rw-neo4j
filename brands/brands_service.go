@@ -116,11 +116,12 @@ func (s service) Write(thing interface{}) error {
 	if len(brand.ParentUUID) > 0 {
 		writeParent := &neoism.CypherQuery{
 			Statement: `
-                                MATCH (t:Thing {uuid:{uuid}})
-                                MERGE (p:Thing {uuid:{parentUUID}})
-                                MERGE (t)-[:HAS_PARENT]->(p)`,
+                                MERGE (o:Thing {uuid: {uuid}})
+		  	   	MERGE (parentupp:Identifier:UPPIdentifier{value:{paUuid}})
+                            	MERGE (parentupp)-[:IDENTIFIES]->(p:Thing) ON CREATE SET p.uuid = {paUuid}
+		            	MERGE (o)-[:HAS_PARENT]->(p)	`,
 			Parameters: neoism.Props{
-				"parentUUID": brand.ParentUUID,
+				"paUuid": brand.ParentUUID,
 				"uuid":       brand.UUID,
 			},
 		}

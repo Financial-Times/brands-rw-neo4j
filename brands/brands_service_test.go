@@ -24,6 +24,7 @@ const (
 	validChildBrandUuid    = "a806e270-edbc-423f-b8db-d21ae90e06c8"
 	specialCharBrandUuid   = "327af339-39d4-4c7b-8c06-9f80211ea93d"
 	contentUuid            = "3fc9fe3e-af8c-4f7f-961a-e5065392bb31"
+	parentBrandUuid = "92f4ec09-436d-4092-a88c-96f54e34007c"
 )
 
 var validSkeletonBrand = Brand{
@@ -62,7 +63,7 @@ var validSimpleBrand = Brand{
 
 var validChildBrand = Brand{
 	UUID:           validChildBrandUuid,
-	ParentUUID:     "92f4ec09-436d-4092-a88c-96f54e34007c",
+	ParentUUID:     parentBrandUuid,
 	PrefLabel:      "validChildBrand",
 	Strapline:      "My parent is simple",
 	Description:    "This brand has a parent and valid values for all fields",
@@ -102,7 +103,7 @@ func TestDeleteExistingBrandWithNoRelationshipsRemovesEverything(t *testing.T) {
 	db := getDatabaseConnectionAndCheckClean(t, assert)
 	brandsDriver := getCypherDriver(db)
 
-	defer cleanDB([]string{validChildBrand.UUID}, db, t, assert)
+	defer cleanDB([]string{validSimpleBrand.UUID}, db, t, assert)
 
 	assert.NoError(brandsDriver.Write(validSimpleBrand), "Failed to write brand")
 
@@ -118,16 +119,20 @@ func TestDeleteExistingBrandWithNoRelationshipsRemovesEverything(t *testing.T) {
 	assert.False(doesThingExistAtAll(validSimpleBrand.UUID, db, t, assert), "Failed to delete brand")
 }
 
-func TestCreateAllValuesPresent(t *testing.T) {
+func TestCreateAllValuesPresentAndParentNodeCreatedCorrectly(t *testing.T) {
 	assert := assert.New(t)
 	db := getDatabaseConnectionAndCheckClean(t, assert)
 	brandsDriver := getCypherDriver(db)
 
-	defer cleanDB([]string{validChildBrand.UUID}, db, t, assert)
+	defer cleanDB([]string{parentBrandUuid, validChildBrand.UUID}, db, t, assert)
 
 	err := brandsDriver.Write(validChildBrand)
 	assert.NoError(err, "Failed to write brand")
 	readBrandAndCompare(validChildBrand, t, db)
+
+	assert.True(doesThingExistWithIdentifiers(parentBrandUuid, db, t, assert),
+		"Unable to find a Thing with any Identifiers, uuid: %s", parentBrandUuid)
+
 }
 
 func TestCreateHandlesSpecialCharacters(t *testing.T) {
@@ -165,7 +170,7 @@ func TestUpdateWillRemovePropertiesAndIdentifiersNoLongerPresent(t *testing.T) {
 	db := getDatabaseConnectionAndCheckClean(t, assert)
 	brandsDriver := getCypherDriver(db)
 
-	defer cleanDB([]string{updatedSkeletonBrand.UUID}, db, t, assert)
+	defer cleanDB([]string{updatedSkeletonBrand.UUID, validSimpleBrand.UUID}, db, t, assert)
 
 	assert.NoError(brandsDriver.Write(validSkeletonBrand), "Failed to write brand")
 	readBrandAndCompare(validSkeletonBrand, t, db)
@@ -224,7 +229,7 @@ func TestDeleteWithRelationshipsMaintainsRelationships(t *testing.T) {
 	assert.Equal(Brand{}, brand, "Found brand %s who should have been deleted", brand)
 	assert.False(found, "Found brand for uuid %s who should have been deleted", validSimpleBrandUuid)
 	assert.NoError(err, "Error trying to find brand for uuid %s", validSimpleBrandUuid)
-	assert.Equal(true, doesThingExistWithIdentifiers(validSimpleBrandUuid, db, t, assert),
+	assert.True(doesThingExistWithIdentifiers(validSimpleBrandUuid, db, t, assert),
 		"Unable to find a Thing with any Identifiers, uuid: %s", validSimpleBrandUuid)
 }
 
@@ -287,7 +292,8 @@ func getDatabaseConnectionAndCheckClean(t *testing.T, assert *assert.Assertions)
 		validSimpleBrandUuid,
 		validChildBrandUuid,
 		specialCharBrandUuid,
-		contentUuid}, db, t)
+		contentUuid,
+		parentBrandUuid}, db, t)
 	return db
 }
 
@@ -310,10 +316,12 @@ func cleanDB(uuidsToClean []string, db neoutils.NeoConnection, t *testing.T, ass
 		qs[i] = &neoism.CypherQuery{
 			Statement: fmt.Sprintf(`
 			MATCH (a:Thing {uuid: "%s"})
-			OPTIONAL MATCH (a)-[rel]-(i)
-			DELETE rel, i
+			OPTIONAL MATCH (a)-[rel]-(s)
+			OPTIONAL MATCH (p)-[rel2]-(id)
+			DELETE rel2, id, rel, s
 			DETACH DELETE a`, uuid)}
 	}
+
 	err := db.CypherBatch(qs)
 	assert.NoError(err)
 }
