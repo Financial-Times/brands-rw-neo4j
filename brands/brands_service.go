@@ -102,8 +102,7 @@ func (s service) Write(thing interface{}) error {
 
 	deleteIdentifiers := &neoism.CypherQuery{
 		Statement: `
-                        MATCH (t:Thing {uuid:{uuid}})
-                        OPTIONAL MATCH (i:Identifier)-[ir:IDENTIFIES]->(t)
+                        MATCH (t:Thing {uuid:{uuid}})<-[ir:IDENTIFIES]-(i:Identifier)
                         DELETE ir, i`,
 		Parameters: neoism.Props{
 			"uuid": brand.UUID,
@@ -154,7 +153,8 @@ func (s service) Write(thing interface{}) error {
 }
 
 func createNewIdentifierQuery(uuid string, identifierLabel string, identifierValue string) *neoism.CypherQuery {
-	statementTemplate := fmt.Sprintf(`MERGE (t:Thing {uuid:{uuid}})
+	statementTemplate := fmt.Sprintf(`
+					MERGE (t:Thing {uuid:{uuid}})
 					CREATE (i:Identifier {value:{value}})
 					MERGE (t)<-[:IDENTIFIES]-(i)
 					set i : %s `, identifierLabel)
@@ -190,7 +190,7 @@ func (s service) Delete(uuid string) (bool, error) {
 	removeOwnedRelationships := &neoism.CypherQuery{
 		Statement: `
 			MATCH (thing:Thing {uuid: {uuid}})-[p:HAS_PARENT]->(t:Thing)
-	 			DELETE p
+	 		DELETE p
 		`,
 		Parameters: neoism.Props{
 			"uuid": uuid,
