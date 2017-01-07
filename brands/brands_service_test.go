@@ -75,6 +75,7 @@ var validChildBrand = Brand{
 		UUIDS: []string{"a806e270-edbc-423f-b8db-d21ae90e06c8"},
 	},
 	Types: defaultTypes,
+	Aliases: []string{"SomeWonkyBrand", "AnotherAliasForABrand"},
 }
 
 var specialCharBrand = Brand{
@@ -278,11 +279,7 @@ func readBrandAndCompare(expected Brand, t *testing.T, db neoutils.NeoConnection
 
 	actualBrand := actual.(Brand)
 	sort.Strings(actualBrand.Types)
-	assert.EqualValues(t, expected, actualBrand, "Types are not what is expected")
-
 	sort.Strings(actualBrand.Aliases)
-	assert.EqualValues(t, expected, actualBrand, "Aliases are not what is expected")
-
 	assert.True(t, reflect.DeepEqual(expected, actual), "Actual brand and exepected brand do not match")
 }
 
