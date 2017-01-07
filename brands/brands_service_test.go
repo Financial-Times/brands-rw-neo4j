@@ -14,6 +14,7 @@ import (
 	"os"
 	"sort"
 	"testing"
+	"reflect"
 )
 
 var defaultTypes = []string{"Thing", "Brand", "Concept", "Classification"}
@@ -281,6 +282,8 @@ func readBrandAndCompare(expected Brand, t *testing.T, db neoutils.NeoConnection
 
 	sort.Strings(actualBrand.Aliases)
 	assert.EqualValues(t, expected, actualBrand, "Aliases are not what is expected")
+
+	assert.True(t, reflect.DeepEqual(expected, actual), "Actual brand and exepected brand do not match")
 }
 
 func getCypherDriver(db neoutils.NeoConnection) service {
