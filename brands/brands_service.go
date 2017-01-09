@@ -50,7 +50,7 @@ func (s service) Read(uuid string) (interface{}, bool, error) {
                         RETURN n.uuid AS uuid, n.prefLabel AS prefLabel,
                                 n.strapline AS strapline, p.uuid as parentUUID,
                                 n.descriptionXML AS descriptionXML,
-                                n.description AS description, n.imageUrl AS _imageUrl,
+                                n.description AS description, n.imageUrl AS _imageUrl, n.aliases as aliases,
                                 {uuids:collect(distinct upp.value), TME:collect(distinct tme.value)} as alternativeIdentifiers,
                                 labels(n) as types
                                 `,
@@ -71,7 +71,7 @@ func (s service) Read(uuid string) (interface{}, bool, error) {
 
 func (s service) Write(thing interface{}) error {
 	brand := thing.(Brand)
-	brandProps := map[string]string{
+	brandProps := map[string]interface{}{
 		"uuid":           brand.UUID,
 		"prefLabel":      brand.PrefLabel,
 		"strapline":      brand.Strapline,
@@ -79,6 +79,17 @@ func (s service) Write(thing interface{}) error {
 		"description":    brand.Description,
 		"imageUrl":       brand.ImageURL,
 	}
+
+	var aliases []string
+
+	for _, alias := range brand.Aliases {
+		aliases = append(aliases, alias)
+	}
+
+	if len(aliases) > 0 {
+		brandProps["aliases"] = aliases
+	}
+
 
 	deleteParentRelationship := &neoism.CypherQuery{
 		Statement: `
@@ -91,8 +102,7 @@ func (s service) Write(thing interface{}) error {
 
 	deleteIdentifiers := &neoism.CypherQuery{
 		Statement: `
-                        MATCH (t:Thing {uuid:{uuid}})
-                        OPTIONAL MATCH (i:Identifier)-[ir:IDENTIFIES]->(t)
+                        MATCH (t:Thing {uuid:{uuid}})<-[ir:IDENTIFIES]-(i:Identifier)
                         DELETE ir, i`,
 		Parameters: neoism.Props{
 			"uuid": brand.UUID,
@@ -114,14 +124,14 @@ func (s service) Write(thing interface{}) error {
 	queries := []*neoism.CypherQuery{deleteParentRelationship, deleteIdentifiers, writeBrand}
 
 	if len(brand.ParentUUID) > 0 {
-		fmt.Printf("**HAS PARENT %s", brand.ParentUUID)
 		writeParent := &neoism.CypherQuery{
 			Statement: `
-                                MATCH (t:Thing {uuid:{uuid}})
-                                MERGE (p:Thing {uuid:{parentUUID}})
-                                MERGE (t)-[:HAS_PARENT]->(p)`,
+                                MERGE (o:Thing {uuid: {uuid}})
+		  	   	MERGE (parentupp:Identifier:UPPIdentifier{value:{paUuid}})
+                            	MERGE (parentupp)-[:IDENTIFIES]->(p:Thing) ON CREATE SET p.uuid = {paUuid}
+		            	MERGE (o)-[:HAS_PARENT]->(p)	`,
 			Parameters: neoism.Props{
-				"parentUUID": brand.ParentUUID,
+				"paUuid": brand.ParentUUID,
 				"uuid":       brand.UUID,
 			},
 		}
@@ -143,7 +153,8 @@ func (s service) Write(thing interface{}) error {
 }
 
 func createNewIdentifierQuery(uuid string, identifierLabel string, identifierValue string) *neoism.CypherQuery {
-	statementTemplate := fmt.Sprintf(`MERGE (t:Thing {uuid:{uuid}})
+	statementTemplate := fmt.Sprintf(`
+					MERGE (t:Thing {uuid:{uuid}})
 					CREATE (i:Identifier {value:{value}})
 					MERGE (t)<-[:IDENTIFIES]-(i)
 					set i : %s `, identifierLabel)
@@ -158,33 +169,13 @@ func createNewIdentifierQuery(uuid string, identifierLabel string, identifierVal
 }
 
 func (s service) Delete(uuid string) (bool, error) {
-	deleteIdentifiers := &neoism.CypherQuery{
-		Statement: `MATCH (t:Thing {uuid:{uuid}})
-                                OPTIONAL MATCH (i:Identifier)-[ir:IDENTIFIES]->(t)
-                                WITH i, count(ir) as c, ir, t
-                                WHERE c = 1
-                                DELETE ir, i
-                                `,
-		Parameters: map[string]interface{}{
-			"uuid": uuid,
-		},
-	}
-
-	deleteOwnedRelationships := &neoism.CypherQuery{
-		Statement: `
-                        MATCH (n:Thing {uuid: {uuid}})-[p:HAS_PARENT]->(t:Thing)
-                        DELETE p
-                `,
-		Parameters: neoism.Props{
-			"uuid": uuid,
-		},
-		IncludeStats: true,
-	}
 
 	clearNode := &neoism.CypherQuery{
 		Statement: `
 			MATCH (n:Thing {uuid: {uuid}})
-			REMOVE n:Brand:Concept:Classification
+			REMOVE n:Brand
+			REMOVE n:Concept
+			REMOVE n:Classification
 			SET n={props}
 		`,
 		Parameters: neoism.Props{
@@ -196,22 +187,38 @@ func (s service) Delete(uuid string) (bool, error) {
 		IncludeStats: true,
 	}
 
-	removeNodeIfUnused := &neoism.CypherQuery{
+	removeOwnedRelationships := &neoism.CypherQuery{
 		Statement: `
-			MATCH (p:Thing {uuid: {uuid}})
-			OPTIONAL MATCH (p)-[a]-(x)
-			WITH p, count(a) AS relCount
-			WHERE relCount = 0
-			DELETE p
+			MATCH (thing:Thing {uuid: {uuid}})-[p:HAS_PARENT]->(t:Thing)
+	 		DELETE p
 		`,
 		Parameters: neoism.Props{
 			"uuid": uuid,
 		},
 	}
 
-	err := s.conn.CypherBatch([]*neoism.CypherQuery{deleteIdentifiers, deleteOwnedRelationships, clearNode, removeNodeIfUnused})
+	// Please note that this removes the Identifiers if there are no other relationships attached to this
+	// as Identifiers are not a 'Thing' only an Identifier. We also need to consider the relationship to the parent
+	// that this app "owns" it
+	removeNodeIfUnused := &neoism.CypherQuery{
+		Statement: `
+			MATCH (thing:Thing {uuid: {uuid}})
+	 			OPTIONAL MATCH (thing)-[ir:IDENTIFIES]-(id:Identifier)
+	 			OPTIONAL MATCH (thing)-[p:HAS_PARENT]->(t:Thing)
+	 			OPTIONAL MATCH (thing)-[a]-(x:Thing)
+	 			WITH ir, id, thing, p, count(a) AS relCount, count(p) AS parentRelCount
+	 			WHERE (relCount - parentRelCount) = 0
+	 			DELETE ir, id, thing
+		`,
+		Parameters: neoism.Props{
+			"uuid": uuid,
+		},
+	}
 
+	err := s.conn.CypherBatch([]*neoism.CypherQuery{clearNode,removeOwnedRelationships, removeNodeIfUnused})
+	
 	s1, err := clearNode.Stats()
+
 	if err != nil {
 		return false, err
 	}
@@ -222,6 +229,7 @@ func (s service) Delete(uuid string) (bool, error) {
 	}
 
 	return deleted, err
+
 }
 
 func (s service) DecodeJSON(dec *json.Decoder) (interface{}, string, error) {
