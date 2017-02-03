@@ -1,6 +1,5 @@
 # Brands Reader/Writer for Neo4j (brands-rw-neo4j)
-[![Circle CI](https://circleci.com/gh/Financial-Times/brands-rw-neo4j.svg?style=shield)](https://circleci.com/gh/Financial-Times/brands-rw-neo4j)[![Go Report Card](https://goreportcard.com/badge/github.com/Financial-Times/brands-rw-neo4j)](https://goreportcard.com/report/github.com/Financial-Times/brands-rw-neo4j) [![Coverage Status](https://coveralls.io/repos/github/Financial-Times/brands-rw-neo4j/badge.svg)](https://coveralls.io/github/Financial-Times/brands-rw-neo4j)
- 
+[![Circle CI](https://circleci.com/gh/Financial-Times/brands-rw-neo4j.svg?style=shield)](https://circleci.com/gh/Financial-Times/brands-rw-neo4j)[![Go Report Card](https://goreportcard.com/badge/github.com/Financial-Times/brands-rw-neo4j)](https://goreportcard.com/report/github.com/Financial-Times/brands-rw-neo4j) [![Coverage Status](https://coveralls.io/repos/github/Financial-Times/brands-rw-neo4j/badge.svg)](https://coveralls.io/github/Financial-Times/brands-rw-neo4j) 
 __An API for reading/writing brands into Neo4j. Expects the brands json supplied to be in the format that comes out of the brands extractor.__
 
 [Runbook for service](https://sites.google.com/a/ft.com/ft-technology-service-transition/home/run-book-library/brand-rw-neo4j)
