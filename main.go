@@ -87,7 +87,7 @@ func main() {
 			Port:          *port,
 			ServiceName:   "brands-rw-neo4j",
 			Env:           *env,
-			EnableReqLog:  false,
+			EnableReqLog:  true,
 		})
 	}
 	log.SetLevel(log.InfoLevel)
