@@ -14,5 +14,3 @@ brands_rw_neo4j:
 resources:
  limits:
    memory: 256Mi
-
-
