@@ -1,2 +1,3 @@
 brands-rw-neo4j*
 .idea
+!helm/brands-rw-neo4j
