@@ -2,3 +2,4 @@ brands-rw-neo4j
 brands-rw-neo4j.exe
 .idea
 !helm/brands-rw-neo4j
+vendor/*/

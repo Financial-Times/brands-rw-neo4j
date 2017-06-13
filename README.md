@@ -7,7 +7,11 @@ __An API for reading/writing brands into Neo4j. Expects the brands json supplied
 ## Developer Notes
 
 ### Installation or Update
-`go get -u github.com/Financial-Times/brands-rw-neo4j`
+        go get -u github.com/kardianos/govendor
+        go get -u github.com/Financial-Times/brands-rw-neo4j
+        cd $GOPATH/src/github.com/Financial-Times/brands-rw-neo4j
+        govendor sync
+        go build .
 
 ### Running
 `$GOPATH/bin/brands-rw-neo4j --neo-url={neo4jUrl} --port={port} --batchSize=50 --graphiteTCPAddress=graphite.ft.com:2003 --graphitePrefix=content.{env}.brands.rw.neo4j.{hostname} --logMetrics=false`
