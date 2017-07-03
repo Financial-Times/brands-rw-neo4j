@@ -1,4 +1,4 @@
 apiVersion: v1
-description: A Helm chart for Kubernetes
+description: brands-rw-neo4j Helm chart for Kubernetes
 name: brands-rw-neo4j
-version: 0.1.0
+version: 0.0.0

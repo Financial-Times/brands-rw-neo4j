@@ -18,8 +18,8 @@ spec:
         visualize: "true" 
     spec:
       containers: 
-      - name: {{ .Chart.Name }} 
-        image: "{{ .Values.image.repository }}:{{ .Values.image.version }}" 
+      - name: {{ .Values.service.name }} 
+        image: "{{ .Values.image.repository }}:{{ .Chart.Version }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         env: 
         - name: APP_PORT 

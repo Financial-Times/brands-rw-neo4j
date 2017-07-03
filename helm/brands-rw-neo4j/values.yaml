@@ -7,7 +7,6 @@ service:
 replicaCount: 2
 image:
   repository: coco/brands-rw-neo4j
-  version: "" # should be set explicitly at installation
   pullPolicy: Always
 brands_rw_neo4j:
   graphite_prefix: "coco.services.k8s.brands-rw-neo4j" # the prefix used for logging in graphite
