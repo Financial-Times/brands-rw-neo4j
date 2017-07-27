@@ -1,0 +1,22 @@
+{
+  "uuid": "a806e270-edbc-423f-b8db-d21ae90e06c8",
+  "parentUUID": "dbb0bdae-1f0c-11e4-b0cb-b2227cce2b54",
+  "prefLabel": "validChildBrand",
+  "type": "Brand",
+  "aliases": [
+      "SomeWonkyBrand",
+      "AnotherAliasForABrand"
+  ],
+  "alternativeIdentifiers": {
+    "TME": [
+      "NTlhNzEyMzMtZjBjZi00Y2U1LTg0ODUtZWVjNmEyYmU1NzQ2-QnJhbmRz"
+    ],
+    "uuids": [
+      "5c7592a8-1f0c-11e4-b0cb-b2227cce2b54"
+    ]
+  },
+  "strapline": "My parent is simple",
+  "description": "Fast FT is a global team working across timezones to give you market-moving news and views twenty-four hours a day, five days a week",
+  "descriptionXML": "<body>This <i>brand</i> has a parent and valid values for all fields</body>",
+  "imageURL":"http://media.ft.com/validChildBrand.png"
+}

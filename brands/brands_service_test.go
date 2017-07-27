@@ -96,7 +96,7 @@ func TestCreateNotAllValuesPresent(t *testing.T) {
 
 	defer cleanDB([]string{validSkeletonBrandUuid}, db, t, assert)
 
-	assert.NoError(brandsDriver.Write(validSkeletonBrand), "Failed to write brand")
+	assert.NoError(brandsDriver.Write(validSkeletonBrand, "TRANS"), "Failed to write brand")
 	readBrandAndCompare(validSkeletonBrand, t, db)
 }
 
@@ -107,13 +107,13 @@ func TestDeleteExistingBrandWithNoRelationshipsRemovesEverything(t *testing.T) {
 
 	defer cleanDB([]string{validSimpleBrand.UUID}, db, t, assert)
 
-	assert.NoError(brandsDriver.Write(validSimpleBrand), "Failed to write brand")
+	assert.NoError(brandsDriver.Write(validSimpleBrand, "TRANS"), "Failed to write brand")
 
-	done, err := brandsDriver.Delete(validSimpleBrand.UUID)
+	done, err := brandsDriver.Delete(validSimpleBrand.UUID, "TRANS")
 	assert.NoError(err, "Failed to write brand")
 	assert.True(done, "Delete failed to complete")
 
-	brand, found, err := brandsDriver.Read(validSimpleBrand.UUID)
+	brand, found, err := brandsDriver.Read(validSimpleBrand.UUID, "TRANS")
 	assert.NoError(err, "Failed to read brand")
 	assert.Equal(Brand{}, brand, "Found brand %s who should have been deleted", brand)
 	assert.False(found, "Found a brand that should have been deleted")
@@ -128,7 +128,7 @@ func TestCreateAllValuesPresentAndParentNodeCreatedCorrectly(t *testing.T) {
 
 	defer cleanDB([]string{parentBrandUuid, validChildBrand.UUID}, db, t, assert)
 
-	err := brandsDriver.Write(validChildBrand)
+	err := brandsDriver.Write(validChildBrand, "TRANS")
 	assert.NoError(err, "Failed to write brand")
 	readBrandAndCompare(validChildBrand, t, db)
 
@@ -144,7 +144,7 @@ func TestCreateHandlesSpecialCharacters(t *testing.T) {
 
 	defer cleanDB([]string{specialCharBrand.UUID}, db, t, assert)
 
-	err := brandsDriver.Write(specialCharBrand)
+	err := brandsDriver.Write(specialCharBrand, "TRANS")
 	assert.NoError(err, "Failed to write brand")
 	readBrandAndCompare(specialCharBrand, t, db)
 }
@@ -157,12 +157,12 @@ func TestUpdateWillRemovePropertiesNoLongerPresent(t *testing.T) {
 	defer cleanDB([]string{validSimpleBrand.UUID}, db, t, assert)
 
 	myBrand := validSimpleBrand
-	err := brandsDriver.Write(myBrand)
+	err := brandsDriver.Write(myBrand, "TRANS")
 	readBrandAndCompare(myBrand, t, db)
 	assert.NoError(err, "Failed to write brand")
 
 	myBrand.Description = ""
-	err = brandsDriver.Write(myBrand)
+	err = brandsDriver.Write(myBrand, "TRANS")
 	assert.NoError(err, "Failed to write brand")
 	readBrandAndCompare(myBrand, t, db)
 }
@@ -174,10 +174,10 @@ func TestUpdateWillRemovePropertiesAndIdentifiersNoLongerPresent(t *testing.T) {
 
 	defer cleanDB([]string{updatedSkeletonBrand.UUID, validSimpleBrand.UUID}, db, t, assert)
 
-	assert.NoError(brandsDriver.Write(validSkeletonBrand), "Failed to write brand")
+	assert.NoError(brandsDriver.Write(validSkeletonBrand, "TRANS"), "Failed to write brand")
 	readBrandAndCompare(validSkeletonBrand, t, db)
 
-	assert.NoError(brandsDriver.Write(updatedSkeletonBrand), "Failed to write updated brand")
+	assert.NoError(brandsDriver.Write(updatedSkeletonBrand, "TRANS"), "Failed to write updated brand")
 	readBrandAndCompare(updatedSkeletonBrand, t, db)
 }
 
@@ -188,13 +188,13 @@ func TestCount(t *testing.T) {
 
 	defer cleanDB([]string{updatedSkeletonBrand.UUID, validSimpleBrand.UUID}, db, t, assert)
 
-	assert.NoError(brandsDriver.Write(validSkeletonBrand), "Failed to write brand")
+	assert.NoError(brandsDriver.Write(validSkeletonBrand, "TRANS"), "Failed to write brand")
 
 	nr, err := brandsDriver.Count()
 	assert.Equal(1, nr, "Should be 1 subjects in DB - count differs")
 	assert.NoError(err, "An unexpected error occurred during count")
 
-	assert.NoError(brandsDriver.Write(validSimpleBrand), "Failed to write brand")
+	assert.NoError(brandsDriver.Write(validSimpleBrand, "TRANS"), "Failed to write brand")
 
 	nr, err = brandsDriver.Count()
 	assert.Equal(2, nr, "Should be 2 subjects in DB - count differs")
@@ -217,16 +217,16 @@ func TestDeleteWithRelationshipsMaintainsRelationships(t *testing.T) {
 
 	defer cleanDB([]string{validSimpleBrandUuid, contentUuid}, db, t, assert)
 
-	assert.NoError(brandsDriver.Write(validSimpleBrand), "Failed to write brand")
+	assert.NoError(brandsDriver.Write(validSimpleBrand, "TRANS"), "Failed to write brand")
 	writeContent(assert, db)
 	writeAnnotation(assert, db)
 
-	found, err := brandsDriver.Delete(validSimpleBrandUuid)
+	found, err := brandsDriver.Delete(validSimpleBrandUuid, "TRANS")
 
 	assert.True(found, "Didn't manage to delete brand for uuid %", validSimpleBrandUuid)
 	assert.NoError(err, "Error deleting brand for uuid %s", validSimpleBrandUuid)
 
-	brand, found, err := brandsDriver.Read(validSimpleBrandUuid)
+	brand, found, err := brandsDriver.Read(validSimpleBrandUuid, "TRANS")
 
 	assert.Equal(Brand{}, brand, "Found brand %s who should have been deleted", brand)
 	assert.False(found, "Found brand for uuid %s who should have been deleted", validSimpleBrandUuid)
@@ -236,7 +236,7 @@ func TestDeleteWithRelationshipsMaintainsRelationships(t *testing.T) {
 }
 
 func writeAnnotation(assert *assert.Assertions, db neoutils.NeoConnection) annotations.Service {
-	annotationsRW := annotations.NewCypherAnnotationsService(db, "v2")
+	annotationsRW := annotations.NewCypherAnnotationsService(db, "v2", "TRANS")
 	assert.NoError(annotationsRW.Initialise())
 	writeJSONToAnnotationsService(annotationsRW, contentUuid, "./fixtures/Annotations-3fc9fe3e-af8c-4f7f-961a-e5065392bb31-v2.json", assert)
 	return annotationsRW
@@ -265,7 +265,7 @@ func writeJSONToService(service baseftrwapp.Service, pathToJSONFile string, asse
 	dec := json.NewDecoder(f)
 	inst, _, errr := service.DecodeJSON(dec)
 	assert.NoError(errr)
-	errrr := service.Write(inst)
+	errrr := service.Write(inst, "TRANS")
 	assert.NoError(errrr)
 }
 
@@ -273,7 +273,7 @@ func readBrandAndCompare(expected Brand, t *testing.T, db neoutils.NeoConnection
 	sort.Strings(expected.Types)
 	sort.Strings(expected.Aliases)
 
-	actual, found, err := getCypherDriver(db).Read(expected.UUID)
+	actual, found, err := getCypherDriver(db).Read(expected.UUID, "TRANS")
 	assert.NoError(t, err, "Failed to read brand")
 	assert.True(t, found, "Failed to find brand")
 

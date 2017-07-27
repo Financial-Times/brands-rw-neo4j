@@ -37,7 +37,7 @@ func (s service) Initialise() error {
 		"UPPIdentifier": "value"})
 }
 
-func (s service) Read(uuid string) (interface{}, bool, error) {
+func (s service) Read(uuid string, transId string) (interface{}, bool, error) {
 	results := []struct {
 		Brand
 	}{}
@@ -69,7 +69,7 @@ func (s service) Read(uuid string) (interface{}, bool, error) {
 	return results[0].Brand, true, nil
 }
 
-func (s service) Write(thing interface{}) error {
+func (s service) Write(thing interface{}, transId string) error {
 	brand := thing.(Brand)
 	brandProps := map[string]interface{}{
 		"uuid":           brand.UUID,
@@ -168,7 +168,7 @@ func createNewIdentifierQuery(uuid string, identifierLabel string, identifierVal
 	return query
 }
 
-func (s service) Delete(uuid string) (bool, error) {
+func (s service) Delete(uuid string, transId string) (bool, error) {
 
 	clearNode := &neoism.CypherQuery{
 		Statement: `
