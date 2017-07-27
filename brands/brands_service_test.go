@@ -236,7 +236,7 @@ func TestDeleteWithRelationshipsMaintainsRelationships(t *testing.T) {
 }
 
 func writeAnnotation(assert *assert.Assertions, db neoutils.NeoConnection) annotations.Service {
-	annotationsRW := annotations.NewCypherAnnotationsService(db, "v2", "TRANS")
+	annotationsRW := annotations.NewCypherAnnotationsService(db)
 	assert.NoError(annotationsRW.Initialise())
 	writeJSONToAnnotationsService(annotationsRW, contentUuid, "./fixtures/Annotations-3fc9fe3e-af8c-4f7f-961a-e5065392bb31-v2.json", assert)
 	return annotationsRW
@@ -255,7 +255,7 @@ func writeJSONToAnnotationsService(service annotations.Service, contentUUID stri
 	dec := json.NewDecoder(f)
 	inst, errr := service.DecodeJSON(dec)
 	assert.NoError(errr, "Error parsing file %s", pathToJSONFile)
-	errrr := service.Write(contentUUID, inst)
+	errrr := service.Write(contentUUID, "annotations-v2", "v2", "TRANS", inst)
 	assert.NoError(errrr)
 }
 
