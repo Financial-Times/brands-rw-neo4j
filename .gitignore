@@ -1,2 +1,7 @@
-brands-rw-neo4j*
+*.iml
 .idea
+public-brands-api*
+vendor/*/
+.project
+.vscode
+.env
